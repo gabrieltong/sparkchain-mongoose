@@ -1,0 +1,37 @@
+{
+  "name": "sparkchain-mongoose",
+  "version": "0.1.18",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "mocha test.js"
+  },
+  "dependencies": {
+    "sparkchain": "0.0.10",
+    "mongoose-timestamp":"*",
+    "mongoose-paginate":"*",
+    "dotenv": "*",
+    "async": "*",
+    "mongoose": "5.1.5",
+    "moment": "*",
+    "async": "*",
+    "node-cache":"*"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "dotenv-json": "*",
+    "random-js": "*",
+    "chai": "*",
+    "async": "*"
+  },  
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabrieltong/sparkchain-mongoose.git"
+  },
+  "author": "gabetong",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gabrieltong/sparkchain-mongoose/issues"
+  },
+  "homepage": "https://github.com/gabrieltong/sparkchain-mongoose#readme"
+}
