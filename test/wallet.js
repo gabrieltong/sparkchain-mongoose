@@ -23,7 +23,6 @@ describe('wallet', function() {
       let {instance} = result;
       let {chainCode, tokenCode} = process.env;
       instance.syncBalanceByAcount({chainCode, tokenCode}, function(err, result){
-        // console.log(result)
         assert.equal(err, null);
         assert.equal(result.balances.length, 2);
         done();
@@ -85,21 +84,23 @@ describe('wallet', function() {
     })
   });
 });
-return;
+// return;
 describe('Wallet', function() {
-  // return;  
   it('newInstance', function(done){
     let userId = random.string(32);
     let password = random.string(32);
     let onlyWallet = false;
     let appId = process.env['appid'];
     Wallet.newInstance({appId, userId, password, onlyWallet}, function(err, instance){
+      instance.getBalances({}, function(err, result){
+        console.log(result);
+      })
       assert.equal(err, null);
       assert.equal(!!instance, true);
       done();
     })
   })
-  // return;
+  return;
   // this.timeout(3 * 1000)
   it('sync u1', function(done){
     let userId = process.env['u1.userId'];
@@ -182,7 +183,7 @@ describe('Wallet', function() {
   // return;  
 })
 
-// return;
+return;
 // return;
 describe('wallet', function() {   
   it('getBalances', function(done){
@@ -294,30 +295,30 @@ describe('Wallet', function() {
 // return;
 
 describe('wallet', function() {
-  // it('transfer fail', function(done){
-  //   async.parallel({
-  //     accessToken: function(cb_p){
-  //       App.getAccessToken({}, cb_p);
-  //     },
-  //     from: function(cb_p){
-  //       Wallet.findOne({userId: 'player-1'}).exec(cb_p);
-  //     },
-  //     other: function(cb_p){
-  //       Wallet.findOne({userId: 'player-2'}).exec(cb_p);
-  //     }
-  //   }, function(err, result){
-  //     let {from, other ,accessToken} = result;
-  //     let chainCode = process.env.chainCode;
-  //     let tokenCode = process.env.tokenCode;
-  //     let amount = Math.pow(10,10);
-  //     let memo = '转账测试: from u1 to u2 : amount: 0.01';
-  //     let form = {accessToken, other, chainCode, tokenCode, amount, memo};
-  //     from.transfer(form, function(err, response, body){
-  //       assert.equal(body.success, false);
-  //       done();
-  //     })
-  //   })
-  // })
+  it('transfer fail', function(done){
+    async.parallel({
+      accessToken: function(cb_p){
+        App.getAccessToken({}, cb_p);
+      },
+      from: function(cb_p){
+        Wallet.findOne({userId: 'player-1'}).exec(cb_p);
+      },
+      other: function(cb_p){
+        Wallet.findOne({userId: 'player-2'}).exec(cb_p);
+      }
+    }, function(err, result){
+      let {from, other ,accessToken} = result;
+      let chainCode = process.env.chainCode;
+      let tokenCode = process.env.tokenCode;
+      let amount = Math.pow(10,10);
+      let memo = '转账测试: from u1 to u2 : amount: 0.01';
+      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
+      from.transfer(form, function(err, response, body){
+        assert.equal(body.success, false);
+        done();
+      })
+    })
+  })
   // return;
   it('transferToAccount', function(done){
     this.timeout(5 * 1000);
@@ -326,7 +327,7 @@ describe('wallet', function() {
         App.getAccessToken({}, cb_p);
       },
       from: function(cb_p){
-        Wallet.findOne({userId: 'player-2'}).exec(function(err, wallet){
+        Wallet.findOne({userId: process.env.appid}).exec(function(err, wallet){
           wallet.getBalances({}, function(err){
             cb_p(err, wallet)
           })
@@ -404,7 +405,7 @@ describe('wallet', function() {
         App.getAccessToken({}, cb_p);
       },
       from: function(cb_p){
-        Wallet.findOne({userId: 'player-1'}).exec(cb_p);
+        Wallet.findOne({userId: process.env.appid}).exec(cb_p);
       },
       other: function(cb_p){
         Wallet.findOne({userId: 'player-2'}).exec(cb_p);

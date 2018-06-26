@@ -106,36 +106,26 @@ function walletPlugin(schema, options){
     let self = this;
     if(self.wallet)
     {
-      cb();
+      cb(null, self.wallet);
     }else{
-      // console.log('in...........')
-      // console.log(self.wallet)
-      // console.trace();
       let appId = process.env.appid;
       if(!self.walletUserId)
       {
         self.walletUserId = self._id.toString();
       }
-
       let userId = self.walletUserId;
-      // let userId = random.string(32);
-      
       let password = random.string(32);
-      // console.log(Chain)
-      // console.log('{appId, userId, password} >>>>')
-      // console.log({appId, userId, password})
       Wallet.newInstance({appId, userId, password}, function(err, wallet){
-        // console.log(arguments)
-        // console.log(wallet)
         if(!err)
         {
           self.wallet = wallet;
           self.save(function(){
-            cb();
+            wallet.sync(function(){
+              cb(null, wallet);
+            })
           })
         }else{
-          console.log(err);
-          cb();
+          cb(err);
         }
       })
     }

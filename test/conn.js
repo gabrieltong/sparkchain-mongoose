@@ -12,11 +12,11 @@ let conn_main_string;
 if (process.env.SPARK_CHAIN_TEST_PASS) {
   conn_main_string = `mongodb://${process.env.SPARK_CHAIN_TEST_USER}:${process.env.SPARK_CHAIN_TEST_PASS}@${
     process.env.SPARK_CHAIN_TEST_HOST
-  }:${process.env.SPARK_CHAIN_TEST_PORT}/${process.env.SPARK_CHAIN_TEST_NAME}?replicaSet=mgset-2462143`;
+  }:${process.env.SPARK_CHAIN_TEST_PORT}/${process.env.SPARK_CHAIN_TEST_NAME}`;
 } else {
   conn_main_string = `mongodb://${process.env.SPARK_CHAIN_TEST_HOST}:${process.env.SPARK_CHAIN_TEST_PORT}/${
     process.env.SPARK_CHAIN_TEST_NAME
-  }?replicaSet=mgset-2462143`;
+  }`;
 }
 
 let conn_main = mongoose.createConnection(conn_main_string);
@@ -28,11 +28,11 @@ if (process.env.SPARK_CHAIN_TEST_PASS) {
     process.env.SPARK_CHAIN_TEST_LOG_PASS
   }@${process.env.SPARK_CHAIN_TEST_LOG_HOST}:${process.env.SPARK_CHAIN_TEST_LOG_PORT}/${
     process.env.SPARK_CHAIN_TEST_LOG_NAME
-  }?replicaSet=mgset-2462143`;
+  }`;
 } else {
   conn_log_string = `mongodb://${process.env.SPARK_CHAIN_TEST_LOG_HOST}:${
     process.env.SPARK_CHAIN_TEST_LOG_PORT
-  }/${process.env.SPARK_CHAIN_TEST_LOG_NAME}?replicaSet=mgset-2462143`;
+  }/${process.env.SPARK_CHAIN_TEST_LOG_NAME}`;
 }
 
 let conn_log = mongoose.createConnection(conn_log_string);

@@ -1,12 +1,13 @@
 {
   "name": "sparkchain-mongoose",
-  "version": "0.1.18",
+  "version": "0.1.20",
   "description": "",
   "main": "main.js",
   "scripts": {
     "test": "mocha test.js"
   },
   "dependencies": {
+    "winston":"*",
     "sparkchain": "0.0.10",
     "mongoose-timestamp":"*",
     "mongoose-paginate":"*",

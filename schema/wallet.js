@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 let sparkchain = require('sparkchain');
 let async = require('async');
+let logger = require('../logger.js');
 let accountSchema = require('./account');
 let balanceSchema = require('./balance');
 let Biz = require('../models/biz');
@@ -34,7 +35,6 @@ WalletSchema.virtual("tran_value").get(function() {
 
 WalletSchema.virtual("src_json").get(function(){
   let hash = {};
-  // hash[]
 });
 
 WalletSchema.statics.getInstance = function(options, cb){
@@ -75,9 +75,14 @@ WalletSchema.statics.sync = function(options, cb){
       self.getInstance(options, cb_w);
     },
     function(wallet, cb_w){
-      wallet.sync({}, function(){
-        cb_w(null, wallet)
-      })
+      if(wallet)
+      {
+        wallet.sync({}, function(){
+          cb_w(null, wallet);
+        })
+      }else{
+        cb_w('no.wallet');
+      }
     }
   ], cb)
 };
@@ -129,6 +134,8 @@ WalletSchema.methods.cachedBalances = function(options, cb){
 };
 
 WalletSchema.methods.syncBalanceByAcount = function(options, cb){
+  console.log('here .....')
+  logger.debug(`syncBalanceByAcount options ${options}`);
   let {chainCode, tokenCode} = options;
   let self = this;
   let account = self.accounts.find(b=>b.chainCode = chainCode);
@@ -136,7 +143,6 @@ WalletSchema.methods.syncBalanceByAcount = function(options, cb){
   if(account && balance)
   {
     account.balance({chainCode, tokenCode}, function(err, response, body){
-      console.log(body)
       if(body.success)
       {
         balance.balance = body.data.balance;
@@ -165,8 +171,6 @@ WalletSchema.methods.syncBalance = function(options, cb){
     let {accessToken} = results;
     let {userId} = self; 
     let data = {accessToken, userId, chainCode, tokenCode};
-    // console.log(data)
-    // console.log(data)
     sparkchain.Wallet.syncBalance(data, function(err ,response, body){
       let balance = self.balances.find(b=>b.tokenCode == body.data.tokenCode);
       if(body.success && balance)
@@ -197,10 +201,15 @@ WalletSchema.methods.getBalances = function(options, cb){
     let data = {accessToken, userId};
     
     sparkchain.Wallet.balances(data, function(err ,response, body){
-      self.balances = body.data.balances;
-      self.save(function(){
-        cb(null, {balances: self.balances});
-      });
+      if(body.success)
+      {
+        self.balances = body.data.balances;
+        self.save(function(){
+          cb(null, {balances: self.balances});
+        });
+      }else{
+        cb(null, {balances: []});
+      }
     });
   });
 };
@@ -215,7 +224,6 @@ WalletSchema.methods.getAccounts = function(options, cb){
     let {accessToken} = results;
     let {userId} = self; 
     let data = {accessToken, userId};
-    // console.log(data)
     sparkchain.Wallet.accounts(data, function(err ,response, body){
       accounts = body.data.accounts.map(a=>{
         return {
@@ -284,7 +292,6 @@ WalletSchema.methods.safeTransfer = function(options, cb){
 };
 
 WalletSchema.methods.transferToAccount = function(options, cb){
-  // console.log(options)
   let {accessToken, account, chainCode, tokenCode, amount, memo} = options;
   let self = this;
 
@@ -296,8 +303,6 @@ WalletSchema.methods.transferToAccount = function(options, cb){
       App.getAccessToken({accessToken}, cb_p)
     }
   }, function(err, results){
-    // console.log(err)
-    // console.log(results)
     let {biz, accessToken} = results;
     let data = {
       accessToken, chainCode, tokenCode, amount,
@@ -307,9 +312,7 @@ WalletSchema.methods.transferToAccount = function(options, cb){
       payPassword: self.payPassword,
       destAccount: account
     }
-    console.log(data)
     sparkchain.Wallet.transfer(data, function(err, response, body){
-      // console.log(body)
       if(body.success)
       {
         biz.gasFee = body.data.gasFee;
@@ -328,7 +331,6 @@ WalletSchema.methods.transferToAccount = function(options, cb){
 };
 
 WalletSchema.methods.transfer = function(options, cb){
-  // console.log(options)
   let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
   let self = this;
 
@@ -340,8 +342,6 @@ WalletSchema.methods.transfer = function(options, cb){
       App.getAccessToken({accessToken}, cb_p)
     }
   }, function(err, results){
-    // console.log(err)
-    // console.log(results)
     let {biz, accessToken} = results;
     let data = {
       accessToken, chainCode, tokenCode, amount,
@@ -351,9 +351,7 @@ WalletSchema.methods.transfer = function(options, cb){
       payPassword: self.payPassword,
       destUserId: other.userId
     }
-    // console.log(data)
     sparkchain.Wallet.transfer(data, function(err, response, body){
-      // console.log(body)
       if(body.success)
       {
         biz.gasFee = body.data.gasFee;
@@ -362,10 +360,11 @@ WalletSchema.methods.transfer = function(options, cb){
           cb(err, response, body);
         })
       }else{
-        console.log('here ......');
         biz.body = JSON.stringify(body);
         biz.save(function(err){
-          console.log(err)
+          if(err){
+            logger.error(err);
+          }
           cb(err, response, body);
         })
       }
@@ -402,7 +401,6 @@ WalletSchema.methods.resetPassword = function(options, cb){
     let {accessToken} = results;
     options = {accessToken, userId};
     sparkchain.Wallet.resetPassword(options, function(err, response, body){
-      // console.log(body)
       if(err){
         cb(err);
       }else if(body.success){
@@ -433,9 +431,7 @@ WalletSchema.methods.updatePayPassword = function(options, cb){
   let {accessToken, newPayPassword} = options;
   let {userId, payPassword} = this;
   options = {accessToken, newPayPassword, userId, oldPayPassword: payPassword};
-  // console.log(options)
   sparkchain.Wallet.updatePayPassword(options, function(err, response, body){
-    // console.log(body)
     if(err){
       cb(err);
     }else if(body.success){
@@ -472,7 +468,6 @@ WalletSchema.methods.resetPayPassword = function(options, cb){
     let {accessToken} = results;
     options = {accessToken, userId};
     sparkchain.Wallet.resetPayPassword(options, function(err, response, body){
-      // console.log(body)
       if(err){
         cb(err);
       }else if(body.success){
@@ -519,9 +514,7 @@ WalletSchema.statics.newInstance = function(options, cb){
         },
         function(accessToken, cb_w){
           options.accessToken = accessToken;
-          console.log(options)
           sparkchain.App.createWallet(options, function(err, response, body){
-            console.log(body)
             if(err)
             {
               cb_w(err);
