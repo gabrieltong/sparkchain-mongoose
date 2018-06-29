@@ -8,7 +8,7 @@ require('dotenv').config();
 
 describe('Biz', function() {
   it('static.getInstance', function(done){
-    Biz.getInstance({}, function(err, instance){
+    Biz.getInstance({}).then(function(instance){
       assert.equal(!!instance, true);
       assert.equal(!!instance._id, true);
       done();

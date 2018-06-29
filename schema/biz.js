@@ -21,7 +21,7 @@ let BizSchema = new Schema({
   body: String
 });
 
-BizSchema.statics.getInstance = async function(options, cb){
+BizSchema.statics.getInstance = async function(options){
   let {type, chainCode, tokenCode, memo, amount, destAccount, srcUserId, destUserId} = options;
   let self = this;
   let biz = new self({type, chainCode, tokenCode, destAccount, memo, amount, srcUserId, destUserId});

@@ -219,13 +219,13 @@ WalletSchema.methods.getAccounts = async function(options={}){
   });
 };
 
-WalletSchema.methods.safeBalance = async function(options, cb){
+WalletSchema.methods.safeBalance = async function(options){
   this.balance(options, function(err, sum){
     return sum - process.env['SPARK_CHAIN_SAFE'];
   });
 };
 
-WalletSchema.methods.balance = async function(options, cb){
+WalletSchema.methods.balance = async function(options){
   let {chainCode} = options;
   if(this.balances)
   {
@@ -238,7 +238,7 @@ WalletSchema.methods.balance = async function(options, cb){
   }
 };
 
-WalletSchema.methods.safeTransfer = async function(options, cb){
+WalletSchema.methods.safeTransfer = async function(options){
   let {other, accessToken, chainCode, tokenCode, amount, reload} = options;
   let self = this;
 
@@ -400,7 +400,7 @@ WalletSchema.methods.validPassword = function(options){
   });
 };
 
-WalletSchema.methods.updatePayPassword = async function(options, cb){
+WalletSchema.methods.updatePayPassword = async function(options){
   let self = this;
   let {accessToken, newPayPassword} = options;
   let {userId, payPassword} = this;
@@ -423,7 +423,7 @@ WalletSchema.methods.updatePayPassword = async function(options, cb){
   });
 };
 
-WalletSchema.methods.validPayPassword = async function(options, cb){
+WalletSchema.methods.validPayPassword = async function(options){
   let {accessToken} = options;
   let {userId, payPassword} = this;
 
@@ -464,7 +464,7 @@ WalletSchema.methods.resetPayPassword = async function(options={}){
   });
 };
 
-WalletSchema.methods.setPayPassword = async function(options, cb){
+WalletSchema.methods.setPayPassword = async function(options){
   let {appId, accessToken, payPassword} = options;
   let {userId, password} = this;
   let self = this;

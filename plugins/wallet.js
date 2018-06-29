@@ -13,126 +13,85 @@ function walletPlugin(schema, options){
   schema.add({ wallet: { type: Schema.Types.ObjectId, ref: "Wallet", index: true } });
   
   schema.statics.getEE = function(cb){
-    this.findOne({walletUserId: process.env.appid.toString()}, cb);
+    return this.findOne({walletUserId: process.env.appid.toString()});
   };
 
   schema.methods.getWallet = function(cb){
-    Wallet.findOne({_id: this.wallet}).exec(cb);
+    return Wallet.findOne({_id: this.wallet});
   };
 
-  schema.methods.transferToAccount = function(options, cb){
+  schema.methods.transferToAccount = async function(options){
     let {accessToken, account, chainCode, tokenCode, amount, memo} = options;
     let self = this;
-    async.parallel({
-      from: function(cb_p){
-        self.getWallet(function(err, wallet){
-          if(err)
-          {
-            cb_p(err);
-          }else if(!wallet)
-          {
-            cb_p('no.wallet');
-          }else{
-            cb_p(null, wallet);
-          }
-        });
-      }
-    }, function(err, result){
-      if(err)
-      {
-        cb(err);
-      }else{
-        let {from} = result;
-        from.transferToAccount({account, chainCode, tokenCode, amount, memo, accessToken}, cb);
-      }
-    })
+    let from = await this.getWallet().catch(e=>{
+      return Promise.reject(e);
+    });
+
+    if(!from) return Promise.reject('no.wallet');
+
+    return from.transferToAccount({account, chainCode, tokenCode, amount, memo, accessToken});
   };
 
-  schema.methods.safeTransfer = function(options, cb){
+  schema.methods.safeTransfer = async function(options){
     let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
     let self = this;
-    async.parallel({
-      from: function(cb_p){
-        self.getWallet(function(err, wallet){
-          cb_p(null, wallet);
-        });
-      },
-      other: function(cb_p){
-        other.getWallet(function(err, wallet){
-          cb_p(null, wallet);
-        });
-      }
-    }, function(err, result){
-      let {from, other} = result;
+    try{
+      let from = await this.getWallet();
+      other = await other.getWallet();
+      
       if(from && other)
       {
-        from.safeTransfer({other, chainCode, tokenCode, amount, memo, accessToken}, cb);  
+        return await from.safeTransfer({other, chainCode, tokenCode, amount, memo, accessToken});
       }else{
-        cb('no wallet');
+        return Promise.reject('no.wallet');
       }
-    })
-  };
-
-  schema.methods.transfer = function(options, cb){
-    let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
-    let self = this;
-    async.parallel({
-      from: function(cb_p){
-        self.getWallet(function(err, wallet){
-          wallet.sync({}, function(){
-            cb_p(null, wallet);
-          })
-        });
-      },
-      other: function(cb_p){
-        other.getWallet(function(err, wallet){
-          wallet.sync({}, function(){
-            cb_p(null, wallet);
-          })
-        });
-      }
-    }, function(err, result){
-      let {from, other} = result;
-      if(from && other)
-      {
-        from.transfer({other, chainCode, tokenCode, amount, memo, accessToken}, cb);
-      }else{
-        cb('no wallet');
-      }
-    })
-  };
-
-  schema.methods.createWallet = function(options, cb){
-    let self = this;
-    if(self.wallet)
+    }catch(e)
     {
-      cb(null, self.wallet);
-    }else{
-      let appId = process.env.appid;
-      if(!self.walletUserId)
+      return Promise.reject(e);
+    }
+  };
+
+  schema.methods.transfer = async function(options){
+    let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
+    let self = this;
+    try{
+      let from = await this.getWallet();
+      await from.sync();
+      other = await other.getWallet();
+      await other.sync();
+
+      if(from && other)
       {
-        self.walletUserId = self._id.toString();
+        return await from.transfer({other, chainCode, tokenCode, amount, memo, accessToken});
+      }else{
+        return Promise.reject('no.wallet');
       }
-      let userId = self.walletUserId;
-      let password = random.string(32);
-      Wallet.newInstance({appId, userId, password}, function(err, wallet){
-        if(!err)
-        {
-          self.wallet = wallet;
-          self.save(function(){
-            wallet.sync(function(){
-              cb(null, wallet);
-            })
-          })
-        }else{
-          cb(err);
-        }
-      })
+    }catch(e)
+    {
+      return Promise.reject(e);
+    }
+  };
+
+  schema.methods.createWallet = async function(options){
+    if(this.wallet) return this.wallet;
+    
+    let appId = process.env.appid;
+    if(!this.walletUserId)
+    {
+      this.walletUserId = this._id.toString();
+    }
+    let userId = this.walletUserId;
+    let password = random.string(32);
+
+    try{
+      let wallet = await Wallet.newInstance({appId, userId, password});
+      this.wallet = wallet;
+      await this.save();
+      await wallet.sync();
+      return wallet;
+    }catch(e)
+    {
+      return Promise.reject(e);
     }
   }
-  // schema.post('init', function(self, next){
-  //   self.createWallet({}, function(){
-  //     next(); 
-  //   });
-  // });
 };
