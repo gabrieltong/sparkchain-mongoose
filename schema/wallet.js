@@ -37,7 +37,7 @@ WalletSchema.virtual("src_json").get(function(){
   let hash = {};
 });
 
-WalletSchema.statics.getInstance = function(options, cb){
+WalletSchema.statics.getInstance = async function(options){
   let self = this;
   let {name, appId, userId, walletAddr} = options;
   let form = {appId};
@@ -48,514 +48,489 @@ WalletSchema.statics.getInstance = function(options, cb){
     form.walletAddr = walletAddr;
   }
 
-  self.findOne(form).exec(function(err, wallet){
-    if(wallet){
-      cb(null, wallet);
-    }else{
-      wallet = new self({appId, userId, walletAddr});
-      wallet.password = '123456';
-      wallet.name = name;
-      wallet.save(function(err){
-        if(err)
-        {
-          cb(err)
-        }else{
-          cb(null, wallet);
-        }
-      })
-    }
-  })
+  let wallet = this.findOne(form)
+  if(wallet){
+    return wallet;
+  }
+  wallet = new self({appId, userId, walletAddr});
+  wallet.password = '123456';
+  wallet.name = name;
+  await wallet.save().catch(e=>{
+    return Promise.reject(e);
+  });
+  return wallet;
 };
 
-WalletSchema.statics.sync = function(options, cb){
+WalletSchema.statics.sync = async function(options){
   let self = this;
   let {appId, userId, walletAddr} = options;
-  async.waterfall([
-    function(cb_w){
-      self.getInstance(options, cb_w);
-    },
-    function(wallet, cb_w){
-      if(wallet)
-      {
-        wallet.sync({}, function(){
-          cb_w(null, wallet);
-        })
-      }else{
-        cb_w('no.wallet');
-      }
-    }
-  ], cb)
-};
-
-WalletSchema.methods.sync = function(options, cb){
-  let self = this;
-  async.waterfall([
-    function(cb_w){
-      self.getBalances({}, function(err){
-        cb_w();
-      });
-    },
-    function(cb_w){
-      self.getAccounts({}, function(){
-        cb_w();
-      });
-    },
-    function(cb_w){
-      self.resetPassword({}, function(){
-        cb_w(null)
-      })
-    },
-    function(cb_w){
-      self.resetPayPassword({}, function(){
-        cb_w(null)
-      })
-    }
-  ], cb)
-};
-
-WalletSchema.methods.cachedBalances = function(options, cb){
-  let {accessToken} = options;
-  let self = this;
-  let cache_key = `getBalances-${this._id.toString}`;
-  cache.get(cache_key, function(err, value){
-    if(value != undefined)
-    {
-      cb(null, {balances: value, is_cache: true});
-    }else{
-      self.getBalances(options, function(err, result){
-        let {balances} = result;
-        
-        cache.set(cache_key, balances, function(){
-          cb(null, result);  
-        });
-      })    
-    }
+  let wallet = await this.getInstance(options).catch(e=>{
+    return Promise.reject(e);
   });
-};
 
-WalletSchema.methods.syncBalanceByAcount = function(options, cb){
-  console.log('here .....')
-  logger.debug(`syncBalanceByAcount options ${options}`);
-  let {chainCode, tokenCode} = options;
-  let self = this;
-  let account = self.accounts.find(b=>b.chainCode = chainCode);
-  let balance = self.balances.find(b=>b.chainCode = chainCode);
-  if(account && balance)
+  if(wallet)
   {
-    account.balance({chainCode, tokenCode}, function(err, response, body){
-      if(body.success)
-      {
-        balance.balance = body.data.balance;
-        balance.freezed = body.data.freezed;
-        self.save(function(){
-          cb(null, {
-            balances: self.balances
-          })
-        })
-      }
-    })
+    await wallet.sync().catch(e=>{
+      return Promise.reject(e);
+    });;
+    return wallet;
   }else{
-    cb('no.account');
+    return Promise.reject('no.wallet');
   }
 };
 
-WalletSchema.methods.syncBalance = function(options, cb){
+WalletSchema.methods.sync = async function(){
+  try{
+    console.log('getBalances')
+    await this.getBalances()
+    console.log('getAccounts')
+    await this.getAccounts()
+    console.log('resetPassword')
+    await this.resetPassword()
+    console.log('resetPayPassword')
+    await this.resetPayPassword();
+    console.log('this')
+    return this;
+  }catch(e)
+  {
+    return Promise.reject(e);
+  }
+};
+
+WalletSchema.methods.cachedBalances = async function(options){
+  let {accessToken} = options;
+  let self = this;
+  return new Promise(function(resolve, reject) {
+    let cache_key = `getBalances-${self._id.toString}`;
+    cache.get(cache_key, async function(err, value){
+      if(value != undefined)
+      {
+        return resolve({balances: value, is_cache: true});
+      }else{
+        let result = await self.getBalances(options)
+        let {balances} = result;  
+        cache.set(cache_key, balances, function(){
+          return resolve({balances, is_cache: false});
+        });
+      }
+    });
+  });
+};
+
+WalletSchema.methods.syncBalanceByAcount = async function(options){
+  let {chainCode, tokenCode} = options;
+  let self = this;
+  let account = self.accounts.find(b=>b.chainCode == chainCode);
+  let balance = self.balances.find(b=>b.chainCode == chainCode);
+
+  if(account && balance)
+  {
+    let result = await account.balance({chainCode, tokenCode}).catch(e=>{
+      return Promise.reject(e);
+    });
+    let {err, response, body} = result;
+
+    if(body.success)
+    {
+      balance.balance = body.data.balance;
+      balance.freezed = body.data.freezed;
+      await self.save()
+    }
+    return {balances: self.balances};
+  }else{
+    return Promise.reject('no.account')
+  }
+};
+
+WalletSchema.methods.syncBalance = async function(options){
   let {accessToken, chainCode, tokenCode} = options;
   let self = this;
 
-  async.parallel({
-    accessToken: function(cb_p){
-      App.getAccessToken({accessToken}, cb_p)  
-    }
-  }, function(err, results){
-    let {accessToken} = results;
-    let {userId} = self; 
-    let data = {accessToken, userId, chainCode, tokenCode};
-    sparkchain.Wallet.syncBalance(data, function(err ,response, body){
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+  let {userId} = self; 
+  let data = {accessToken, userId, chainCode, tokenCode};
+
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.syncBalance(data, async function(err ,response, body){
       let balance = self.balances.find(b=>b.tokenCode == body.data.tokenCode);
       if(body.success && balance)
       {
         balance.balance = body.data.balance;
         balance.freezed = body.data.freezed;
-        self.save(function(){
-          cb(null, {balances: self.balances});
-        });
-      }else{
-        cb(null, {balances: self.balances});
+        await self.save();
       }
+      resolve({balances: self.balances});
     });
   });
 };
 
-WalletSchema.methods.getBalances = function(options, cb){
+WalletSchema.methods.getBalances = async function(options={}){
   let {accessToken} = options;
   let self = this;
-
-  async.parallel({
-    accessToken: function(cb_p){
-      App.getAccessToken({accessToken}, cb_p)  
-    }
-  }, function(err, results){
-    let {accessToken} = results;
-    let {userId} = self; 
-    let data = {accessToken, userId};
-    
-    sparkchain.Wallet.balances(data, function(err ,response, body){
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+  let {userId} = this; 
+  let data = {accessToken, userId};
+  
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.balances(data, async function(err ,response, body){
       if(body.success)
       {
         self.balances = body.data.balances;
-        self.save(function(){
-          cb(null, {balances: self.balances});
-        });
+        await self.save()
+        resolve({balances: self.balances});
       }else{
-        cb(null, {balances: []});
+        reject(body);
       }
     });
   });
 };
 
-WalletSchema.methods.getAccounts = function(options, cb){
+WalletSchema.methods.getAccounts = async function(options={}){
   let self = this;
-  async.parallel({
-    accessToken: function(cb_p){
-      App.getAccessToken({}, cb_p)
-    }
-  }, function(err, results){
-    let {accessToken} = results;
-    let {userId} = self; 
-    let data = {accessToken, userId};
-    sparkchain.Wallet.accounts(data, function(err ,response, body){
-      accounts = body.data.accounts.map(a=>{
-        return {
-          accountId: a.accountId,
-          chainCode: a.chainCode,
-          account: a.accountAddr
-        }
-      })
-      self.accounts = accounts;
-      self.save(cb);
+  let {accessToken} = options;
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+
+  let {userId} = self; 
+  let data = {accessToken, userId};
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.accounts(data, async function(err ,response, body){
+      if(body.success)
+      {
+        accounts = body.data.accounts.map(a=>{
+          return {
+            accountId: a.accountId,
+            chainCode: a.chainCode,
+            account: a.accountAddr
+          }
+        })
+        self.accounts = accounts;
+        await self.save();
+        resolve({accounts});
+      }else{
+        reject(body);
+      }
     });
   });
 };
 
-WalletSchema.methods.safeBalance = function(options, cb){
+WalletSchema.methods.safeBalance = async function(options, cb){
   this.balance(options, function(err, sum){
-    cb(null, sum - process.env['SPARK_CHAIN_SAFE']);
+    return sum - process.env['SPARK_CHAIN_SAFE'];
   });
 };
 
-WalletSchema.methods.balance = function(options, cb){
+WalletSchema.methods.balance = async function(options, cb){
   let {chainCode} = options;
   if(this.balances)
   {
     let sum = this.balances.filter(b=>b.chainCode == chainCode).reduce((sum, b)=>{
       return sum + b.balance - b.freezed;
     },0)
-    cb(null, sum);
+    return sum;
   }else{
-    cb(null, 0);
+    return 0;
   }
 };
 
-WalletSchema.methods.safeTransfer = function(options, cb){
+WalletSchema.methods.safeTransfer = async function(options, cb){
   let {other, accessToken, chainCode, tokenCode, amount, reload} = options;
   let self = this;
-  async.parallel({
-    fromSafe: function(cb_p){
-      self.safeBalance(options, function(err, safe){
-        if(safe > amount)
-        {
-          cb_p(null, 1);
-        }else{
-          cb(`from is not safe: no enough balance: ${safe} for ${amount}`);
-        }
-      })
-    },
-    otherSafe: function(cb_p){
-      other.balance(options, function(err, sum){
-        if(sum + amount > process.env['SPARK_CHAIN_SAFE'])
-        {
-          cb_p(null, 1);
-        }else{
-          cb(`other is not safe`);
-        }
-      })
-    }
-  }, function(err){
-    if(err)
-    {
-      cb(err)
-    }else{
-      self.transfer(options, cb);
-    }
-  })
+
+  let fromSafe = await self.safeBalance(options).catch(function(err){
+    return Promise.reject(e);
+  });
+
+  if(fromSafe < amount){
+    return Promise.reject(`from is not safe: no enough balance: ${safe} for ${amount}`);
+  }
+
+  let otherSafe = await other.balance(options)
+  if(otherSafe + amount < process.env['SPARK_CHAIN_SAFE'])
+  {
+    return Promise.reject(`other is not safe`);
+  }
+  
+  return self.transfer(options);
 };
 
-WalletSchema.methods.transferToAccount = function(options, cb){
+WalletSchema.methods.transferToAccount = async function(options){
   let {accessToken, account, chainCode, tokenCode, amount, memo} = options;
   let self = this;
 
-  async.parallel({
-    biz: function(cb_p){
-      Biz.getInstance({type: 2, chainCode, tokenCode, memo, amount, srcUserId: self.userId, destAccount: account}, cb_p);
-    },
-    accessToken: function(cb_p){
-      App.getAccessToken({accessToken}, cb_p)
-    }
-  }, function(err, results){
-    let {biz, accessToken} = results;
-    let data = {
-      accessToken, chainCode, tokenCode, amount,
-      bizId: biz._id.toString(),
-      memo: biz.memo,
-      srcUserId: self.userId,
-      payPassword: self.payPassword,
-      destAccount: account
-    }
-    sparkchain.Wallet.transfer(data, function(err, response, body){
+  let biz = await Biz.getInstance({type: 2, chainCode, tokenCode, memo, amount, srcUserId: self.userId, destAccount: account}).catch(e=>{
+    return Promise.reject(e);
+  });
+
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+  
+  let data = {
+    accessToken, chainCode, tokenCode, amount,
+    bizId: biz._id.toString(),
+    memo: biz.memo,
+    srcUserId: self.userId,
+    payPassword: self.payPassword,
+    destAccount: account
+  }
+
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.transfer(data, async function(err, response, body){
       if(body.success)
       {
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
-        biz.save(function(){
-          cb(err, response, body);
-        })
+        await biz.save().catch(e=>{
+          return reject(e)
+        });
+        resolve({err, response, body})
       }else{
-        biz.body = body;
-        biz.save(function(){
-          cb(err, response, body);
-        })
+        biz.body = JSON.stringify(body);
+        await biz.save().catch(e=>{
+          return reject(e)
+        });
+        resolve({err, response, body});
       }
     })
   })
 };
 
-WalletSchema.methods.transfer = function(options, cb){
+WalletSchema.methods.transfer = async function(options){
   let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
   let self = this;
 
-  async.parallel({
-    biz: function(cb_p){
-      Biz.getInstance({type: 1, chainCode, tokenCode, memo, amount, srcUserId: self.userId, destUserId: other.userId}, cb_p);
-    },
-    accessToken: function(cb_p){
-      App.getAccessToken({accessToken}, cb_p)
-    }
-  }, function(err, results){
-    let {biz, accessToken} = results;
-    let data = {
-      accessToken, chainCode, tokenCode, amount,
-      bizId: biz._id.toString(),
-      memo: biz.memo,
-      srcUserId: self.userId,
-      payPassword: self.payPassword,
-      destUserId: other.userId
-    }
-    sparkchain.Wallet.transfer(data, function(err, response, body){
+  let biz = await Biz.getInstance({type: 1, chainCode, tokenCode, memo, amount, srcUserId: self.userId, destUserId: other.userId}).catch(e=>{
+    return Promise.reject(e);
+  });
+    
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+    
+  let data = {
+    accessToken, chainCode, tokenCode, amount,
+    bizId: biz._id.toString(),
+    memo: biz.memo,
+    srcUserId: self.userId,
+    payPassword: self.payPassword,
+    destUserId: other.userId
+  }
+
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.transfer(data, async function(err, response, body){
       if(body.success)
       {
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
-        biz.save(function(){
-          cb(err, response, body);
-        })
+        await biz.save().catch(e=>{
+          return reject(e)
+        });
+        resolve({err, response, body})
       }else{
         biz.body = JSON.stringify(body);
-        biz.save(function(err){
-          if(err){
-            logger.error(err);
-          }
-          cb(err, response, body);
-        })
+        await biz.save().catch(e=>{
+          return reject(e)
+        });
+        resolve({err, response, body});
       }
     })
   })
 };
 
-WalletSchema.methods.modifyPassword = function(options, cb){
+WalletSchema.methods.modifyPassword = async function(options){
   let {accessToken, newPassword} = options;
   let {userId,password} = this;
   let self = this;
-  options = {accessToken, userId, newPassword, oldPassword: password};
-  sparkchain.Wallet.modifyPassword(options, function(err, response, body){
-    if(err){
-      cb(err);
-    }else if(body.success){
-      self.password = newPassword;
-      self.save(cb);
-    }else{
-      cb('modifyPassword.fail');
-    }
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
   });
-};
 
-WalletSchema.methods.resetPassword = function(options, cb){
-  let {accessToken} = options;
-  let {userId} = this;
-  let self = this;
-  async.parallel({
-    accessToken: function(cb_p){
-      App.getAccessToken({accessToken}, cb_p)  
-    }
-  }, function(err, results){
-    let {accessToken} = results;
-    options = {accessToken, userId};
-    sparkchain.Wallet.resetPassword(options, function(err, response, body){
-      if(err){
-        cb(err);
-      }else if(body.success){
-        self.password = body.data.newPwd;
-        self.save(cb);
+  data = {accessToken, userId, newPassword, oldPassword: password};
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.modifyPassword(data, async function(err, response, body){
+      if(body.success){
+        self.password = newPassword;
+        await self.save();
+        resolve(self);
       }else{
-        cb('resetPassword.fail');
+        reject({err,response,body,data,action:'modifyPassword'});
       }
     });
   });
 };
 
-WalletSchema.methods.validPassword = function(options, cb){
+WalletSchema.methods.resetPassword = async function(options={}){
+  let {accessToken} = options;
+  let {userId} = this;
+  let self = this;
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+
+  options = {accessToken, userId};
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.resetPassword(options, async function(err, response, body){
+      if(err){
+        reject(err);
+      }else if(body.success){
+        self.password = body.data.newPwd;
+        await self.save();
+        resolve(self);
+      }else{
+        reject('resetPassword.fail');
+      }
+    });
+  });
+};
+
+WalletSchema.methods.validPassword = function(options){
   let {accessToken} = options;
   let {userId, password} = this;
   options = {accessToken, password, userId};
-  sparkchain.Wallet.validPassword(options, function(err, response, body){
-    if(err){
-      cb(err);
-    }else{
-      cb(null, body);
-    }
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.validPassword(options, function(err, response, body){
+      resolve({err, response, body})
+    });
   });
 };
 
-WalletSchema.methods.updatePayPassword = function(options, cb){
+WalletSchema.methods.updatePayPassword = async function(options, cb){
   let self = this;
   let {accessToken, newPayPassword} = options;
   let {userId, payPassword} = this;
-  options = {accessToken, newPayPassword, userId, oldPayPassword: payPassword};
-  sparkchain.Wallet.updatePayPassword(options, function(err, response, body){
-    if(err){
-      cb(err);
-    }else if(body.success){
-      self.payPassword = body.data.newPwd;
-      self.save(cb);
-    }else{
-      cb('updatePayPassword.fail');
-    }
+  
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
   });
-};
 
-WalletSchema.methods.validPayPassword = function(options, cb){
-  let {accessToken} = options;
-  let {userId, payPassword} = this;
-  options = {accessToken, payPassword, userId};
-  sparkchain.Wallet.validPayPassword(options, function(err, response, body){
-    if(err){
-      cb(err);
-    }else{
-      cb(null, body);
-    }
-  });
-};
-
-WalletSchema.methods.resetPayPassword = function(options, cb){
-  let {accessToken} = options;
-  let {userId} = this;
-  let self = this;
-  async.parallel({
-    accessToken: function(cb_p){
-      App.getAccessToken({accessToken}, cb_p)  
-    }
-  }, function(err, results){
-    let {accessToken} = results;
-    options = {accessToken, userId};
-    sparkchain.Wallet.resetPayPassword(options, function(err, response, body){
-      if(err){
-        cb(err);
-      }else if(body.success){
+  data = {accessToken, newPayPassword, userId, oldPayPassword: payPassword};
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.updatePayPassword(data, async function(err, response, body){
+      if(body.success){
         self.payPassword = body.data.newPwd;
-        self.save(cb);
+        await self.save();
+        resolve(self)
       }else{
-        cb('resetPayPassword.fail');
+        reject({err, response, body, data, action:'updatePayPassword'});
       }
     });
   });
 };
 
-WalletSchema.methods.setPayPassword = function(options, cb){
+WalletSchema.methods.validPayPassword = async function(options, cb){
+  let {accessToken} = options;
+  let {userId, payPassword} = this;
+
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+
+  data = {accessToken, payPassword, userId};
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.validPayPassword(data, function(err, response, body){
+      resolve({err, response, body});
+    });
+  });
+};
+
+WalletSchema.methods.resetPayPassword = async function(options={}){
+  let {accessToken} = options;
+  let {userId} = this;
+  let self = this;
+  
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+  options = {accessToken, userId};
+
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.resetPayPassword(options, async function(err, response, body){
+      if(err){
+        reject(err);
+      }else if(body.success){
+        self.payPassword = body.data.newPwd;
+        await self.save();
+        resolve(self);
+      }else{
+        reject('resetPayPassword.fail');
+      }
+    });
+  });
+};
+
+WalletSchema.methods.setPayPassword = async function(options, cb){
   let {appId, accessToken, payPassword} = options;
   let {userId, password} = this;
   let self = this;
   options = {accessToken, payPassword, userId, password};
-  sparkchain.Wallet.setPayPassword(options, function(err, response, body){
-    if(err){
-      cb(err);
-    }else if(body.success){
-      self.payPassword = payPassword;
-      self.save(cb);
-    }else{
-      cb('setPayPassword.fail');
-    }
+  
+  accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    return Promise.reject(e);
+  });
+  options.accessToken = accessToken;
+  return new Promise(function(resolve, reject) {
+    sparkchain.Wallet.setPayPassword(options, async function(err, response, body){
+      if(err){
+        reject(err);
+      }else if(body.success){
+        self.payPassword = payPassword;
+        await self.save();
+        resolve(self);
+      }else{
+        reject('setPayPassword.fail');
+      }
+    });
   });
 };
 
-WalletSchema.statics.newInstance = function(options, cb){
+WalletSchema.statics.newInstance = async function(options){
   let self = this;
   let {userId, walletAddr, appId, password, accessToken, name} = options;
 
-  self.findOne({
-    $or: [{userId}, {walletAddr}]
-  }).exec(function(err, wallet){
-    if(wallet)
-    {
-      cb(null, wallet);
-    }else{
-      async.waterfall([
-        function(cb_p){
-          App.getAccessToken({accessToken}, cb_p)  
-        },
-        function(accessToken, cb_w){
-          options.accessToken = accessToken;
-          sparkchain.App.createWallet(options, function(err, response, body){
-            if(err)
-            {
-              cb_w(err);
-            }else if(body.success)
-            {
-              let wallet = new self(body.data);
-              wallet.password = password;
-              wallet.appId = appId;
-              wallet.name = name;
-              wallet.save(function(err){
-                if(err){
-                  cb_w(err);
-                }else{
-                  cb_w(null, wallet);
-                }
-              });
-            }else if(body.message.includes('SCCSERV3003')){
-              sparkchain.Wallet.balances(options, function(err, response, body){
-                let wallet = new self(body.data);
-                wallet.name = name;
-                wallet.appId = appId;
-                wallet.save(function(err){
+  let wallet = await this.findOne({$or: [{userId}, {walletAddr}] });
+  if(wallet) return wallet;
+  
+  accessToken = await App.getAccessToken({accessToken});
+  options.accessToken = accessToken;
 
-                  if(err){
-                    cb_w(err);
-                  }else{
-                    cb_w(null, wallet);
-                  }
-                });
-              })
-            }else{
-              cb_w('createWallet.fail');
-            }
-          });
-        },
-        function(wallet, cb_w){
-          wallet.resetPayPassword({accessToken}, cb_w);
-        }
-      ], cb);
-    }
-  })
+  return new Promise(function(resolve, reject) {
+    sparkchain.App.createWallet(options, async function(err, response, body){
+
+      if(err)
+      {
+        reject(err);
+      }else if(body.success)
+      {
+        let wallet = new self(body.data);
+        wallet.password = password;
+        wallet.appId = appId;
+        wallet.name = name;
+
+        await wallet.save();
+
+        await wallet.resetPayPassword({accessToken});
+        // console.log(body)
+        resolve(wallet);
+      }else if(body.message.includes('SCCSERV3003')){
+        sparkchain.Wallet.balances(options, async function(err, response, body){
+          let wallet = new self(body.data);
+          wallet.name = name;
+          wallet.appId = appId;
+          await wallet.save();
+          await wallet.resetPayPassword({accessToken});
+          resolve(wallet);
+        })
+      }else{
+        reject('createWallet.fail');
+      }
+    });
+  });
 };
 
 module.exports = WalletSchema;

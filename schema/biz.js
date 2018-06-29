@@ -21,13 +21,14 @@ let BizSchema = new Schema({
   body: String
 });
 
-BizSchema.statics.getInstance = function(options, cb){
+BizSchema.statics.getInstance = async function(options, cb){
   let {type, chainCode, tokenCode, memo, amount, destAccount, srcUserId, destUserId} = options;
   let self = this;
   let biz = new self({type, chainCode, tokenCode, destAccount, memo, amount, srcUserId, destUserId});
-  biz.save(function(err){
-    cb(err, biz)
+  await biz.save().catch(e=>{
+    return Promise.reject(e);
   });
+  return biz;
 };
 
 BizSchema.methods.s = function(options, cb){

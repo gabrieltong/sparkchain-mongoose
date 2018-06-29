@@ -14,44 +14,44 @@ let AppSchema = new Schema({
   accessToken: { type: String}
 });
 
-AppSchema.statics.getAccessToken = function(options, cb){
+AppSchema.statics.getAccessToken = async function(options, cb=null){
   let self = this;
   let {appcode, appname, appid, appsecret} = process.env;
   let {accessToken} = options;
 
   if(accessToken)
   {
-    cb(null, accessToken);
-    return;
+    if(cb)
+    {
+      cb(null, accessToken);
+      return;
+    }else{
+      return accessToken;
+    }
   }
   
-  async.waterfall([
-    function(cb_w){
-      self.findOne({appid}).exec(function(err, app){
-        if(app)
+  let app = await self.findOne({appid});
+  if(!app)
+  {
+    app = new self({appcode, appname, appid, appsecret});
+    await app.save();
+  }
+
+  if(cb)
+  {
+    app.getAccessToken({}, cb);  
+  }else{
+    return new Promise(function(resolve, reject) {
+      app.getAccessToken({}, function(err, accessToken){
+        if(err)
         {
-          cb_w(null, app);
+          reject(err) 
         }else{
-          app = new self({appcode, appname, appid, appsecret});
-          app.save(function(err){
-            if(err)
-            {
-              cb_w(err);
-            }else{
-              cb_w(null, app);
-            }
-          });
+          resolve(accessToken)
         }
-      });
-    }
-  ], function(err, app){
-    if(err)
-    {
-      cb(err);
-    }else{
-      app.getAccessToken({}, cb);
-    }
-  })
+      })
+    });
+  }
 };
 
 AppSchema.methods.getAccessToken = function(options, cb){
