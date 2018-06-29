@@ -11,6 +11,7 @@ var assert = require('chai').assert;
 let Test = conn.model(process.env['SPARK_CHAIN_MODEL_TEST'], Schema);
 // console.log(Biz);
 
+
 describe('plugin#wallet', function() {
   it('create && safeTransfer', function(done){
     let fn = async function(){
@@ -60,6 +61,25 @@ describe('plugin#wallet', function() {
       
       await from.transfer({other, chainCode, tokenCode, amount, memo}).catch(e=>{
         assert.equal(!!e, true);
+      })
+      done();
+    }
+    fn();
+  })
+  return;
+
+  it('transferByPassword ok', function(done){
+    this.timeout(3 * 1000);
+    let fn = async function(){
+      from = await Test.findOne({name:'player-1'});
+      account = 'jUvcf9FehWDQ2TRbi731PPxa7TSVrvCUQZ';
+      let amount = 1;
+      let chainCode = process.env.chainCode
+      let tokenCode = process.env.tokenCode
+      let memo = 'ssss'
+      let payPassword = '1011919788508708864';
+      let result = await from.transferByPassword({account, chainCode, tokenCode, amount, payPassword, memo}).catch(e=>{
+        assert.equal(e, null);
       })
       done();
     }

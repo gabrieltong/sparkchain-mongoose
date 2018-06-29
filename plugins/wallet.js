@@ -16,11 +16,32 @@ function walletPlugin(schema, options){
     return this.findOne({walletUserId: process.env.appid.toString()});
   };
 
-  schema.methods.getWallet = function(cb){
+  schema.methods.getWallet = function(){
     return Wallet.findOne({_id: this.wallet});
   };
 
+  schema.methods.transferByPassword = async function(options){
+
+    let {chainCode, tokenCode, amount, account, payPassword, memo} = options;
+    
+    // console.log(player)
+    let wallet = await this.getWallet();
+
+    if(!wallet)
+    {
+      return Promise.reject('no.wallet');
+    }
+
+    if(wallet.payPassword != payPassword)
+    {
+      return Promise.reject('payPassword.wrong');
+    }
+
+    return this.transferToAccount({account, chainCode, tokenCode, amount, memo});
+  };
+
   schema.methods.transferToAccount = async function(options){
+
     let {accessToken, account, chainCode, tokenCode, amount, memo} = options;
     let self = this;
     let from = await this.getWallet().catch(e=>{

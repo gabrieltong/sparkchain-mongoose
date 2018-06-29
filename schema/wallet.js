@@ -220,9 +220,8 @@ WalletSchema.methods.getAccounts = async function(options={}){
 };
 
 WalletSchema.methods.safeBalance = async function(options){
-  this.balance(options, function(err, sum){
-    return sum - process.env['SPARK_CHAIN_SAFE'];
-  });
+  let b = await this.balance(options)
+  return b - process.env['SPARK_CHAIN_SAFE'];
 };
 
 WalletSchema.methods.balance = async function(options){
