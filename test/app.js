@@ -16,32 +16,33 @@ require('dotenv').config();
 // return;
 describe('app#', function() {
   it('static.getAccessToken', function(done){
-    App.getAccessToken({}, function(err, accessToken){
-      console.log(accessToken);
+    let fn = async function(){
+      let accessToken = await App.getAccessToken({}).catch(e=>{
+        console.log(e)
+      });
+      console.log(accessToken)
       assert.equal(!!accessToken, true);
       done();
-    })
+    }
+    fn();
   })
 })
-return;
+// return;
 
 describe('app', function() {
+  this.timeout(3000)
   it('getAccessToken', function(done){
-    async.waterfall([
-      function(cb_w){
-        App.findOne({}).exec(cb_w);
-      }
-    ], function(err, instance){
-      
-      instance.getAccessToken({}, function(err, accessToken){
-        console.log(accessToken)
-        assert.equal(!!accessToken, true);
-        done();
-      })
-    })
+    let fn = async function(){
+      let instance = await App.findOne();
+      let accessToken = await instance.getAccessToken();
+      console.log(accessToken)
+      assert.equal(!!accessToken, true);
+      done();
+    }
+    fn();
   })
 })
-return;
+// return;
 describe('app', function() {
   it('refreshAccessToken', function(done){
     async.waterfall([
@@ -50,7 +51,7 @@ describe('app', function() {
       }
     ], function(err, instance){
       
-      instance.refreshAccessToken({}, function(err, instance){
+      instance.refreshAccessToken({}).then(function(instance){
         assert.equal(err, null);
         assert.equal(!!instance, true);
         done();

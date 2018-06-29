@@ -14,7 +14,7 @@ let AppSchema = new Schema({
   accessToken: { type: String}
 });
 
-AppSchema.statics.getAccessToken = async function(options, cb=null){
+AppSchema.statics.getAccessToken = async function(options={}, cb=null){
   let self = this;
   let {appcode, appname, appid, appsecret} = process.env;
   let {accessToken} = options;
@@ -41,20 +41,11 @@ AppSchema.statics.getAccessToken = async function(options, cb=null){
   {
     app.getAccessToken({}, cb);  
   }else{
-    return new Promise(function(resolve, reject) {
-      app.getAccessToken({}, function(err, accessToken){
-        if(err)
-        {
-          reject(err) 
-        }else{
-          resolve(accessToken)
-        }
-      })
-    });
+    return app.getAccessToken();
   }
 };
 
-AppSchema.methods.getAccessToken = function(options, cb){
+AppSchema.methods.getAccessToken = async function(options={}){
   let {refesh} = options;
   
   if(!refesh && moment(this.expired_at).isBefore(moment()))
@@ -66,45 +57,39 @@ AppSchema.methods.getAccessToken = function(options, cb){
   {
     refesh = true;
   }
-  // console.log(refesh)
+  
   if(refesh)
   {
-    this.refreshAccessToken({}, function(err, result){
-      if(err)
-      {
-        cb(err);
-      }else{
-        cb(null, result.accessToken);
-      }
+    let result = await this.refreshAccessToken({}).catch(e=>{
+      return Promise.reject(e);
     })
+    return result.accessToken;
   }else{
-    cb(null, this.accessToken);
+    return this.accessToken;
   }
 };
 
-AppSchema.methods.refreshAccessToken = function(options, cb){
+AppSchema.methods.refreshAccessToken = async function(options){
   let {appid, appsecret} = this;
   let self = this;
-  sparkchain.App.access({appid, appsecret}, function(err, response, body){
-    // console.log(body);
-    if(err)
-    {
-      cb(err)
-    }else if(body.success)
-    {
-      self.accessToken = body.data.accessToken;
-      self.expired_at = moment().add(1, 'hour');
-      self.save(function(err){
-        if(err)
-        {
-          cb(err)
-        }else{
-          cb(null, {accessToken: self.accessToken});
-        }
-      });
-    }else{
-      cb('refreshAccessToken.fail');
-    }
+  return new Promise(function(resolve, reject) {
+    sparkchain.App.access({appid, appsecret}, async function(err, response, body){
+      if(err)
+      {
+        return reject(err)
+      }else if(body.success)
+      {
+        self.accessToken = body.data.accessToken;
+        self.expired_at = moment().add(1, 'hour');
+        await self.save().catch(e=>{
+          return reject(e)
+        })
+          
+        return resolve({accessToken: self.accessToken});
+      }else{
+        return reject('refreshAccessToken.fail');
+      }
+    })
   })
 };
 
