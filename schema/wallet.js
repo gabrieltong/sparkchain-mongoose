@@ -488,6 +488,21 @@ WalletSchema.methods.setPayPassword = async function(options){
   });
 };
 
+WalletSchema.methods.getBizs = async function(options){
+  let {limit, page} = options;
+  limit = limit || 20;
+  page = page || 1;
+  let {walletAddr, userId} = this;
+  return Biz.paginate(
+    {$or: [
+      {srcWalletAddr: walletAddr}, 
+      {srcUserId: userId},
+      {destWalletAddr: walletAddr}, 
+      {destUserId: userId}
+    ]}, {limit, page}
+  );
+};
+
 WalletSchema.statics.newInstance = async function(options){
   let self = this;
   let {userId, walletAddr, appId, password, accessToken, name} = options;

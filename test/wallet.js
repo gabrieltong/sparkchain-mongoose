@@ -19,6 +19,19 @@ function timeout(ms) {
 }
 
 describe('wallet', function() {
+  it('getBizs', function(done){
+    this.timeout(3 * 1000);
+    let fn = async function(){
+      let instance = await Wallet.findOne({userId:'player-3'});
+      let {chainCode, tokenCode} = process.env;
+      let result = await instance.getBizs({chainCode, tokenCode});
+      done();
+    }
+    fn();
+  })
+})
+
+describe('wallet', function() {
   it('syncBalanceByAcount should ok', function(done){
     this.timeout(3 * 1000);
     let fn = async function abc(){
