@@ -287,6 +287,10 @@ WalletSchema.methods.transferToAccount = async function(options){
       {
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
+        await self.getBalances().catch(e=>{
+          console.log(e);
+        });
+        biz.srcRemain = await self.balance({chainCode})
         await biz.save().catch(e=>{
           return reject(e)
         });
@@ -329,9 +333,17 @@ WalletSchema.methods.transfer = async function(options){
       {
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
-        await biz.save().catch(e=>{
-          return reject(e)
+        
+        await self.getBalances().catch(e=>{
+          console.log(e);
         });
+        biz.srcRemain = await self.balance({chainCode})
+        await other.getBalances().catch(e=>{
+          console.log(e);
+        });
+        biz.descRemain = await other.balance({chainCode});
+        await biz.save()
+
         resolve({err, response, body})
       }else{
         biz.body = JSON.stringify(body);

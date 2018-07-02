@@ -18,7 +18,9 @@ let BizSchema = new Schema({
   memo: String,
   gasFee: String,
   hash: String,
-  body: String
+  body: String,
+  srcRemain: Number,
+  descRemain: Number
 });
 
 BizSchema.statics.getInstance = async function(options){
