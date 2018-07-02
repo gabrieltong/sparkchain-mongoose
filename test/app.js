@@ -1,14 +1,14 @@
+let config = require(`../config`);
 let conn = require(`./conn`).conn_main;
 let schema = require('../schema/app');
 let App = conn.model("App", schema);
 let random = require("random-js")();
 var assert = require('chai').assert;
 let async = require('async');
-require('dotenv').config();
 
 // describe('app', function() {
 //   it('createInstance', function(done){
-//     let {appcode, appname, appid, appsecret} = process.env;
+//     let {appcode, appname, appid, appsecret} = config;
 //     let app = new App({appcode, appname, appid, appsecret});
 //     app.save();
 //   })

@@ -7,25 +7,17 @@ let random = require("random-js")();
 var assert = require('chai').assert;
 let async = require('async');
 
-
 describe('Msg', function() {
   it('modifyPassword', function(done){
-    async.parallel({
-      instance: function(cb_p){
-        Msg.findOne({}).exec(cb_p);
-      },
-      accessToken: function(cb_p){
-        App.getAccessToken({}, cb_p);
-      }
-    }, function(err, result){
-      let {instance, accessToken} = result;
-      
+    let fn = async function(){
+      let instance = await Msg.findOne({});
+      let accessToken = await App.getAccessToken({});  
       let newPassword = random.string(32);
-      instance.modifyPassword({accessToken, newPassword}, function(err, instance){
+      await instance.modifyPassword({accessToken, newPassword}).catch(err=>{
         assert.equal(err, null);
-        assert.equal(!!instance, true);
-        done();
       })
-    })
+      done();
+    }
+    fn();
   })
 })

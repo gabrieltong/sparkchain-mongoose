@@ -1,6 +1,6 @@
 let winston = require('winston');
-require("dotenv").config();
-let {SPARK_CHAIN_LOG_LEVEL, SPARK_CHAIN_LOG_DIR} = process.env;
+let config = require('./config');
+let {SPARK_CHAIN_LOG_LEVEL, SPARK_CHAIN_LOG_DIR} = config;
 const logger = winston.createLogger({
   level: SPARK_CHAIN_LOG_LEVEL,
   format: winston.format.json(),

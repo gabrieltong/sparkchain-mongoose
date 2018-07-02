@@ -4,7 +4,6 @@ let Biz = conn.model("Biz", schema);
 let random = require("random-js")();
 var assert = require('chai').assert;
 let async = require('async');
-require('dotenv').config();
 
 describe('Biz', function() {
   it('static.getInstance', function(done){

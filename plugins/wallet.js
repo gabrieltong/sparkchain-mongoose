@@ -1,10 +1,11 @@
+let config = require('../config');
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 require("dotenv").config();
 let Wallet = require('../models/wallet');
 let random = require("random-js")();
 let async = require('async');
-
+let {appid} = config;
 module.exports = walletPlugin;
 
 function walletPlugin(schema, options){
@@ -13,7 +14,7 @@ function walletPlugin(schema, options){
   schema.add({ wallet: { type: Schema.Types.ObjectId, ref: "Wallet", index: true } });
   
   schema.statics.getEE = function(cb){
-    return this.findOne({walletUserId: process.env.appid.toString()});
+    return this.findOne({walletUserId: appid.toString()});
   };
 
   schema.methods.getWallet = function(){
@@ -96,7 +97,7 @@ function walletPlugin(schema, options){
   schema.methods.createWallet = async function(options){
     if(this.wallet) return this.wallet;
     
-    let appId = process.env.appid;
+    let appId = appid;
     if(!this.walletUserId)
     {
       this.walletUserId = this._id.toString();

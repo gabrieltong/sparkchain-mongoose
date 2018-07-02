@@ -1,16 +1,17 @@
+let config = require(`../config`);
 let conn = require(`../conn`).conn;
 
 let Main = require('../main');
 let Schema = require('../schema/test');
 // console.log(Schema)
 let async = require('async');
-require('dotenv').config();
 Schema.plugin(Main.Plugin.Wallet, {});
 var assert = require('chai').assert;
 // console.log(Schema)
-let Test = conn.model(process.env['SPARK_CHAIN_MODEL_TEST'], Schema);
 // console.log(Biz);
+let {SPARK_CHAIN_MODEL_TEST, chainCode, tokenCode,} = config;
 
+let Test = conn.model(SPARK_CHAIN_MODEL_TEST, Schema);
 
 describe('plugin#wallet', function() {
   it('create && safeTransfer', function(done){
@@ -22,8 +23,6 @@ describe('plugin#wallet', function() {
       await other.createWallet();
 
       let amount = 0.1;
-      let chainCode = process.env.chainCode
-      let tokenCode = process.env.tokenCode
       let memo = 'ssss'
       // consol
       await from.safeTransfer({other, chainCode, tokenCode, amount, memo}).catch(e=>{
@@ -48,15 +47,13 @@ describe('plugin#wallet', function() {
     }
     fn();
   })
-  return;
+  // return;
   it('transfer', function(done){
     this.timeout(3 * 1000);
     let fn = async function(){
       from = await Test.findOne({name:'ee'});
       other = await Test.findOne({name:'p'});
       let amount = 30;
-      let chainCode = process.env.chainCode
-      let tokenCode = process.env.tokenCode
       let memo = 'ssss'
       
       await from.transfer({other, chainCode, tokenCode, amount, memo}).catch(e=>{
@@ -66,7 +63,7 @@ describe('plugin#wallet', function() {
     }
     fn();
   })
-  return;
+  // return;
 
   it('transferByPassword ok', function(done){
     this.timeout(3 * 1000);
@@ -74,10 +71,8 @@ describe('plugin#wallet', function() {
       from = await Test.findOne({name:'player-1'});
       account = 'jUvcf9FehWDQ2TRbi731PPxa7TSVrvCUQZ';
       let amount = 1;
-      let chainCode = process.env.chainCode
-      let tokenCode = process.env.tokenCode
       let memo = 'ssss'
-      let payPassword = '1011919788508708864';
+      let payPassword = '2222222';
       let result = await from.transferByPassword({account, chainCode, tokenCode, amount, payPassword, memo}).catch(e=>{
         assert.equal(e, null);
       })

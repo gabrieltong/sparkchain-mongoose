@@ -1,3 +1,4 @@
+let config = require('../config');
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 let sparkchain = require('sparkchain');
@@ -8,7 +9,8 @@ let balanceSchema = require('./balance');
 let Biz = require('../models/biz');
 let App = require('../models/app');
 let NodeCache = require('node-cache');
-let cache = new NodeCache({stdTTL:process.env.NODE_CACHE_TTD});
+let {NODE_CACHE_TTD, SPARK_CHAIN_TRAN_KEY, SPARK_CHAIN_SAFE} = config;
+let cache = new NodeCache({stdTTL:NODE_CACHE_TTD});
 
 let WalletSchema = new Schema({
   name: String,
@@ -26,7 +28,7 @@ WalletSchema.virtual("sum_balances").get(function() {
 });
 
 WalletSchema.virtual("tran_key").get(function() {
-  return process.env['SPARK_CHAIN_TRAN_KEY'];
+  return SPARK_CHAIN_TRAN_KEY;
 });
 
 WalletSchema.virtual("tran_value").get(function() {
@@ -221,7 +223,7 @@ WalletSchema.methods.getAccounts = async function(options={}){
 
 WalletSchema.methods.safeBalance = async function(options){
   let b = await this.balance(options)
-  return b - process.env['SPARK_CHAIN_SAFE'];
+  return b - SPARK_CHAIN_SAFE;
 };
 
 WalletSchema.methods.balance = async function(options){
@@ -250,7 +252,7 @@ WalletSchema.methods.safeTransfer = async function(options){
   }
 
   let otherSafe = await other.balance(options)
-  if(otherSafe + amount < process.env['SPARK_CHAIN_SAFE'])
+  if(otherSafe + amount < SPARK_CHAIN_SAFE)
   {
     return Promise.reject(`other is not safe`);
   }

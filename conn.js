@@ -1,7 +1,8 @@
-require("dotenv").config();
 const mongoose = require("mongoose");
 mongoose.set("debug", false);
+let config = require('./config');
 
+let {SPARK_CHAIN_USER, SPARK_CHAIN_PASS, SPARK_CHAIN_HOST, SPARK_CHAIN_PORT, SPARK_CHAIN_NAME} = config;
 /**
  * @namespace Mongo
  * @memberOf Lib
@@ -9,13 +10,13 @@ mongoose.set("debug", false);
 
 let conn_string;
 
-if (process.env.SPARK_CHAIN_PASS) {
-  conn_string = `mongodb://${process.env.SPARK_CHAIN_USER}:${process.env.SPARK_CHAIN_PASS}@${
-    process.env.SPARK_CHAIN_HOST
-  }:${process.env.SPARK_CHAIN_PORT}/${process.env.SPARK_CHAIN_NAME}`;
+if (SPARK_CHAIN_PASS) {
+  conn_string = `mongodb://${SPARK_CHAIN_USER}:${SPARK_CHAIN_PASS}@${
+    SPARK_CHAIN_HOST
+  }:${SPARK_CHAIN_PORT}/${SPARK_CHAIN_NAME}`;
 } else {
-  conn_string = `mongodb://${process.env.SPARK_CHAIN_HOST}:${process.env.SPARK_CHAIN_PORT}/${
-    process.env.SPARK_CHAIN_NAME
+  conn_string = `mongodb://${SPARK_CHAIN_HOST}:${SPARK_CHAIN_PORT}/${
+    SPARK_CHAIN_NAME
   }`;
 }
 

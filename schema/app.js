@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 let sparkchain = require('sparkchain');
 let moment = require('moment');
-require('dotenv').config();
 let async = require('async');
+let config = require('../config');
 
 let AppSchema = new Schema({
   appcode: { type: String, required: true, index: true},
@@ -16,7 +16,7 @@ let AppSchema = new Schema({
 
 AppSchema.statics.getAccessToken = async function(options={}, cb=null){
   let self = this;
-  let {appcode, appname, appid, appsecret} = process.env;
+  let {appcode, appname, appid, appsecret} = config;
   let {accessToken} = options;
 
   if(accessToken)
