@@ -22,15 +22,16 @@ describe('wallet', function() {
   it('getBizs', function(done){
     this.timeout(3 * 1000);
     let fn = async function(){
-      let instance = await Wallet.findOne({userId:'player-3'});
+      let instance = await Wallet.findOne({userId:'player-1'});
       let {chainCode, tokenCode} = process.env;
       let result = await instance.getBizs({chainCode, tokenCode});
+      console.log(result);
       done();
     }
     fn();
   })
 })
-
+return;
 describe('wallet', function() {
   it('syncBalanceByAcount should ok', function(done){
     this.timeout(3 * 1000);

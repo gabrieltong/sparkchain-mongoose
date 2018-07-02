@@ -489,9 +489,9 @@ WalletSchema.methods.setPayPassword = async function(options){
 };
 
 WalletSchema.methods.getBizs = async function(options){
-  let {limit, page} = options;
-  limit = limit || 20;
-  page = page || 1;
+  let defaults = {page:1, limit:20, sort:{'_id':'desc'}};
+  Object.assign(defaults, options)
+  
   let {walletAddr, userId} = this;
   return Biz.paginate(
     {$or: [
@@ -499,7 +499,7 @@ WalletSchema.methods.getBizs = async function(options){
       {srcUserId: userId},
       {destWalletAddr: walletAddr}, 
       {destUserId: userId}
-    ]}, {limit, page}
+    ]}, defaults
   );
 };
 
