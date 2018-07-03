@@ -337,11 +337,11 @@ WalletSchema.methods.transfer = async function(options){
         await self.getBalances().catch(e=>{
           console.log(e);
         });
-        biz.srcRemain = await self.balance({chainCode})
+        biz.srcRemain = await self.safeBalance({chainCode})
         await other.getBalances().catch(e=>{
           console.log(e);
         });
-        biz.descRemain = await other.balance({chainCode});
+        biz.descRemain = await other.safeBalance({chainCode});
         await biz.save()
 
         resolve({err, response, body})
