@@ -21,11 +21,40 @@ function timeout(ms) {
 }
 
 describe('wallet', function() {
-  it('getBizs', function(done){
+  it('getBizs no type', function(done){
     this.timeout(3 * 1000);
     let fn = async function(){
       let instance = await Wallet.findOne({userId:'player-1'});
-      let result = await instance.getBizs({chainCode, tokenCode});
+      let result = await instance.getBizs();
+      
+      assert.equal(result.docs.length >=0, true);
+      done();
+    }
+    fn();
+  })
+
+  it('getBizs type 1', function(done){
+    this.timeout(3 * 1000);
+    let fn = async function(){
+      let instance = await Wallet.findOne({userId:'player-1'});
+      let result = await instance.getBizs({type:1}, {chainCode, tokenCode});
+      result.docs.forEach(doc=>{
+        assert.equal(doc.type, 1);  
+      })
+      assert.equal(result.docs.length >=0, true);
+      done();
+    }
+    fn();
+  })
+  
+  it('getBizs by type 2', function(done){
+    this.timeout(3 * 1000);
+    let fn = async function(){
+      let instance = await Wallet.findOne({userId:'player-1'});
+      let result = await instance.getBizs({type:2}, {chainCode, tokenCode});
+      result.docs.forEach(doc=>{
+        assert.equal(doc.type, 2);  
+      })
       assert.equal(result.docs.length >=0, true);
       done();
     }
@@ -191,7 +220,82 @@ describe('wallet', function() {
     fn();
   })
 })
-// return;
+
+describe('wallet', function() {
+  this.timeout(10 * 1000)
+  it('transfer fail', function(done){
+    let fn = async function(){
+      let accessToken = await App.getAccessToken({});
+      let from = await Wallet.findOne({userId: appid});
+      let other = await Wallet.findOne({userId});
+        
+      let amount = 10000 *10;
+      let memo = '转账测试: from ee to player-4 : amount: 1';
+      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
+      let result = await from.transfer(form)
+      assert.equal(result.body.success, false);
+      done();
+    }
+    fn();
+  })
+
+  it('transfer', function(done){
+    let fn = async function(){
+      let accessToken = await App.getAccessToken({});
+      let from = await Wallet.findOne({userId: 'player-1'});
+      let other = await Wallet.findOne({userId});
+        
+      let amount = 0.01;
+      let memo = '转账测试: from ee to player-4 : amount: 1';
+      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
+      let result = await from.transfer(form)
+      assert.equal(result.body.success, true);
+      done();
+    }
+    fn();
+  })  
+  // return;
+  it('transferToAccount', function(done){
+    this.timeout(5 * 1000);
+    let fn = async function(){
+      let accessToken = await App.getAccessToken({});
+      let from = await Wallet.findOne({userId: 'player-1'});
+      let other = await Wallet.findOne({userId});
+
+      let amount = 0.01;
+      let memo = '转账测试: from u2 to u1 : amount: 0.01';
+      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
+      form.account = other.accounts.find(a=>a.chainCode == chainCode).account;
+      let result = await from.transferToAccount(form).catch(function(e){
+        assert.equal(e, null);
+      })
+      assert.equal(result.body.success, true);
+      done();
+    }
+    fn();
+  })
+  // return;
+  it('safe transfer', function(done){
+    let fn = async function(){
+      let accessToken = await App.getAccessToken({});
+      let from = await Wallet.findOne({userId: 'player-1'});
+      let other = await Wallet.findOne({userId});
+
+      let amount = 0.01;
+      let memo = '转账测试: from u2 to u1 : amount: 0.01';
+      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
+
+      let result = await from.safeTransfer(form).catch(function(e){
+        assert.equal(!!e, true);
+        done();
+        return;
+      })
+    }    
+    fn();
+  })
+});
+
+return;
 describe('Wallet', function() {
   it('password', function(done){
     this.timeout(10 * 1000)
@@ -246,79 +350,3 @@ describe('Wallet', function() {
   })
 })
 // return;
-
-describe('wallet', function() {
-  this.timeout(10 * 1000)
-  it('transfer fail', function(done){
-    let fn = async function(){
-      let accessToken = await App.getAccessToken({});
-      let from = await Wallet.findOne({userId: appid});
-      let other = await Wallet.findOne({userId});
-        
-      let amount = 10000 *10;
-      let memo = '转账测试: from ee to player-4 : amount: 1';
-      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
-      let result = await from.transfer(form)
-      assert.equal(result.body.success, false);
-      done();
-    }
-    fn();
-  })
-
-  it('transfer', function(done){
-    let fn = async function(){
-      let accessToken = await App.getAccessToken({});
-      let from = await Wallet.findOne({userId: 'player-1'});
-      let other = await Wallet.findOne({userId});
-        
-      let amount = 0.01;
-      let memo = '转账测试: from ee to player-4 : amount: 1';
-      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
-      let result = await from.transfer(form)
-      assert.equal(result.body.success, true);
-      done();
-    }
-    fn();
-  })  
-  // return;
-  it('transferToAccount', function(done){
-    this.timeout(5 * 1000);
-    let fn = async function(){
-      let accessToken = await App.getAccessToken({});
-      let from = await Wallet.findOne({userId: 'player-1'});
-      let other = await Wallet.findOne({userId});
-
-      let amount = 0.01;
-      let memo = '转账测试: from u2 to u1 : amount: 0.01';
-      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
-      form.account = other.accounts.find(a=>a.chainCode == chainCode).account;
-      let result = await from.transferToAccount(form).catch(function(e){
-        assert.equal(e, null);
-      })
-      console.log(result.body)
-      assert.equal(result.body.success, true);
-      done();
-    }
-    fn();
-  })
-  // return;
-  it('safe transfer', function(done){
-    let fn = async function(){
-      let accessToken = await App.getAccessToken({});
-      let from = await Wallet.findOne({userId: 'player-1'});
-      let other = await Wallet.findOne({userId});
-        
-      let amount = 0.01;
-      let memo = '转账测试: from u2 to u1 : amount: 0.01';
-      let form = {accessToken, other, chainCode, tokenCode, amount, memo};
-
-      let result = await from.safeTransfer(form).catch(function(e){
-        assert.equal(!!e, true);
-        done();
-        return;
-      })
-    }    
-    fn();
-  })
-});
-return;

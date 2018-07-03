@@ -502,18 +502,23 @@ WalletSchema.methods.setPayPassword = async function(options){
   });
 };
 
-WalletSchema.methods.getBizs = async function(options){
-  let defaults = {page:1, limit:20, sort:{'_id':'desc'}};
-  Object.assign(defaults, options)
-  
+WalletSchema.methods.getBizs = async function(query={}, options={}){
   let {walletAddr, userId} = this;
-  return Biz.paginate(
-    {$or: [
+  let _query = {
+    $or: [
       {srcWalletAddr: walletAddr}, 
       {srcUserId: userId},
       {destWalletAddr: walletAddr}, 
       {destUserId: userId}
-    ]}, defaults
+    ]
+  };
+  Object.assign(_query, query);
+
+  let _options = {page:1, limit:20, sort:{'_id':'desc'}};
+  Object.assign(_options, options);
+  
+  return Biz.paginate(
+    _query, _options
   );
 };
 
