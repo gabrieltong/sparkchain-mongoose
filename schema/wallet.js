@@ -185,7 +185,11 @@ WalletSchema.methods.getBalances = async function(options={}){
       }else{
         self.balances = [];
       }
-      await self.save()
+      try{
+        await self.save()  
+      }catch(e){
+        console.log(e)
+      }
       resolve({balances: self.balances});
     });
   });
