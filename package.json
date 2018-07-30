@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "winston": "*",
-    "sparkchain": "0.0.11 ",
+    "sparkchain": "0.0.12",
     "mongoose-timestamp": "*",
     "mongoose-paginate": "*",
     "dotenv": "*",
