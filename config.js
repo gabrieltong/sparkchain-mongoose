@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 let defaults = {
+  SPARK_REFRESHH_TOKEN: 1,
   SPARK_CHAIN_SAFE: 20,
 
   SPARK_CHAIN_HOST: '127.0.0.1',

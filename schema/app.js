@@ -80,7 +80,7 @@ AppSchema.methods.refreshAccessToken = async function(options){
       }else if(body.success)
       {
         self.accessToken = body.data.accessToken;
-        self.expired_at = moment().add(1, 'hour');
+        self.expired_at = moment().add(config.SPARK_REFRESHH_TOKEN, 'minutes');
         await self.save().catch(e=>{
           return reject(e)
         })
