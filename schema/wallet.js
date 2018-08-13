@@ -169,14 +169,17 @@ WalletSchema.methods.syncBalance = async function(options){
 };
 
 WalletSchema.methods.getBalances = async function(options={}){
-  let {accessToken} = options;
+  let {accessToken, chainCode} = options;
   let self = this;
   accessToken = await App.getAccessToken({accessToken}).catch(e=>{
     return Promise.reject(e);
   });
   let {userId} = this; 
   let data = {accessToken, userId};
-  
+  if(chainCode)
+  {
+    data = {...data, chainCode};
+  }
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.balances(data, async function(err ,response, body){
       if(body.success)
@@ -252,7 +255,7 @@ WalletSchema.methods.safeTransfer = async function(options){
   });
 
   if(fromSafe < amount){
-    return Promise.reject(`from is not safe: no enough balance: ${safe} for ${amount}`);
+    return Promise.reject(`from is not safe: no enough balance: ${fromSafe} for ${amount}`);
   }
 
   let otherSafe = await other.balance(options)
