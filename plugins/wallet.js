@@ -78,9 +78,9 @@ function walletPlugin(schema, options){
     let self = this;
     try{
       let from = await this.getWallet();
-      await from.sync();
+      await from.sync({chainCode});
       other = await other.getWallet();
-      await other.sync();
+      await other.sync({chainCode});
 
       if(from && other)
       {
@@ -95,6 +95,7 @@ function walletPlugin(schema, options){
   };
 
   schema.methods.createWallet = async function(options){
+    let {chainCode} = options;
     if(this.wallet) return this.wallet;
     
     let appId = appid;
@@ -109,7 +110,7 @@ function walletPlugin(schema, options){
       let wallet = await Wallet.newInstance({appId, userId, password});
       this.wallet = wallet;
       await this.save();
-      await wallet.sync();
+      await wallet.sync({chainCode});
       return wallet;
     }catch(e)
     {

@@ -63,16 +63,23 @@ WalletSchema.statics.getInstance = async function(options){
   return wallet;
 };
 
+/**
+ * 同步钱包
+ * @param  {string} options.appId appId
+ * @param  {string} options.chainCode 钱包地址
+ * @param  {string} options.userId userId
+ * @param  {string} options.walletAddr 钱包地址
+ */
 WalletSchema.statics.sync = async function(options){
   let self = this;
-  let {appId, userId, walletAddr} = options;
+  let {appId, userId, walletAddr, chainCode} = options;
   let wallet = await this.getInstance(options).catch(e=>{
     return Promise.reject(e);
   });
 
   if(wallet)
   {
-    await wallet.sync().catch(e=>{
+    await wallet.sync({chainCode}).catch(e=>{
       return Promise.reject(e);
     });;
     return wallet;
@@ -81,12 +88,13 @@ WalletSchema.statics.sync = async function(options){
   }
 };
 
-WalletSchema.methods.sync = async function(){
+WalletSchema.methods.sync = async function(options){
+  let {chainCode} = options;
   try{
     console.log('getBalances')
-    await this.getBalances()
+    await this.getBalances({chainCode})
     console.log('getAccounts')
-    await this.getAccounts()
+    await this.getAccounts({chainCode})
     console.log('resetPassword')
     await this.resetPassword()
     console.log('resetPayPassword')
@@ -100,7 +108,7 @@ WalletSchema.methods.sync = async function(){
 };
 
 WalletSchema.methods.cachedBalances = async function(options){
-  let {accessToken} = options;
+  let {accessToken, chainCode} = options;
   let self = this;
   return new Promise(function(resolve, reject) {
     let cache_key = `getBalances-${self._id.toString}`;
@@ -200,13 +208,17 @@ WalletSchema.methods.getBalances = async function(options={}){
 
 WalletSchema.methods.getAccounts = async function(options={}){
   let self = this;
-  let {accessToken} = options;
+  let {accessToken, chainCode} = options;
   accessToken = await App.getAccessToken({accessToken}).catch(e=>{
     return Promise.reject(e);
   });
 
   let {userId} = self; 
   let data = {accessToken, userId};
+  if(chainCode)
+  {
+    data = {...data, chainCode};
+  }
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.accounts(data, async function(err ,response, body){
       if(body.success)
@@ -294,7 +306,7 @@ WalletSchema.methods.transferToAccount = async function(options){
       {
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
-        await self.getBalances().catch(e=>{
+        await self.getBalances({chainCode}).catch(e=>{
           console.log(e);
         });
         biz.srcRemain = await self.balance({chainCode})
@@ -341,11 +353,11 @@ WalletSchema.methods.transfer = async function(options){
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
         
-        await self.getBalances().catch(e=>{
+        await self.getBalances({chainCode}).catch(e=>{
           console.log(e);
         });
         biz.srcRemain = await self.safeBalance({chainCode})
-        await other.getBalances().catch(e=>{
+        await other.getBalances({chainCode}).catch(e=>{
           console.log(e);
         });
         biz.descRemain = await other.safeBalance({chainCode});

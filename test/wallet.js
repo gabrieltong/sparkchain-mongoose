@@ -110,15 +110,16 @@ describe('wallet', function() {
   // return; 
   it('cachedBalances', function(done){
     this.timeout(10 * 1000)
+    
     let fn = async function(){
       try{
         let wallet = await Wallet.findOne({userId: appid});
-        let result = await wallet.cachedBalances({});
+        let result = await wallet.cachedBalances({chainCode});
         assert.equal(result.is_cache, false);
-        result = await wallet.cachedBalances({});
+        result = await wallet.cachedBalances({chainCode});
         assert.equal(result.is_cache, true);
         await timeout(NODE_CACHE_TTD * 1000)
-        result = await wallet.cachedBalances({});
+        result = await wallet.cachedBalances({chainCode});
         assert.equal(result.is_cache, false);
         done();
       }catch(e)
