@@ -250,7 +250,7 @@ WalletSchema.methods.balance = async function(options){
   if(this.balances)
   {
     let sum = this.balances.filter(b=>b.chainCode == chainCode).reduce((sum, b)=>{
-      return sum + b.balance;
+      return sum + b.balance - b.freezed;
     },0)
     return sum;
   }else{

@@ -55,7 +55,7 @@ function walletPlugin(schema, options){
   };
 
   schema.methods.safeTransfer = async function(options){
-    let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
+    let {accessToken, other, chainCode, tokenCode, amount, memo, getBalances} = options;
     let self = this;
     try{
       let from = await this.getWallet();
@@ -63,6 +63,11 @@ function walletPlugin(schema, options){
       
       if(from && other)
       {
+        if(getBalances)
+        {
+          await from.getBalances({chainCode});
+          await other.getBalances({chainCode});
+        }
         return await from.safeTransfer({other, chainCode, tokenCode, amount, memo, accessToken});
       }else{
         return Promise.reject('no.wallet');
