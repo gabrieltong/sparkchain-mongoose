@@ -267,7 +267,8 @@ WalletSchema.methods.safeTransfer = async function(options){
   });
 
   if(fromSafe < amount){
-    return Promise.reject(`from is not safe: no enough balance: ${fromSafe} for ${amount}`);
+    options.amount = fromSafe;
+    // return Promise.reject(`from is not safe: no enough balance: ${fromSafe} for ${amount}`);
   }
 
   let otherSafe = await other.balance(options)
