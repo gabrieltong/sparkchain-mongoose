@@ -61,6 +61,7 @@ AppSchema.methods.getAccessToken = async function(options={}){
   if(refesh)
   {
     let result = await this.refreshAccessToken({}).catch(e=>{
+      console.log(e);
       return Promise.reject(e);
     })
     return result.accessToken;
@@ -82,6 +83,7 @@ AppSchema.methods.refreshAccessToken = async function(options){
         self.accessToken = body.data.accessToken;
         self.expired_at = moment().add(config.SPARK_REFRESHH_TOKEN, 'minutes');
         await self.save().catch(e=>{
+          console.log(e)
           return reject(e)
         })
           

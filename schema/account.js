@@ -16,6 +16,7 @@ AccountSchema.methods.balance = async function(options, cb){
   let self = this;
   
   accessToken = await App.getAccessToken({accessToken}).catch(e=>{
+    console.log(e);
     return Promise.reject(e);
   });
   

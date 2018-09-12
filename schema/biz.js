@@ -28,6 +28,7 @@ BizSchema.statics.getInstance = async function(options){
   let self = this;
   let biz = new self({type, chainCode, tokenCode, destAccount, memo, amount, srcUserId, destUserId});
   await biz.save().catch(e=>{
+    console.log(e);
     return Promise.reject(e);
   });
   return biz;

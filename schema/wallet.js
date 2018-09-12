@@ -59,6 +59,7 @@ WalletSchema.statics.getInstance = async function(options){
   wallet.password = '123456';
   wallet.name = name;
   await wallet.save().catch(e=>{
+    console.log(e);
     return Promise.reject(e);
   });
   return wallet;
@@ -268,6 +269,11 @@ WalletSchema.methods.safeTransfer = async function(options){
     return Promise.reject(e);
   });
 
+  if(fromSafe < 0)
+  {
+    return Promise.reject(`from no balance ${self._id.toString()}`);
+  }
+  
   if(fromSafe < amount){
     options.amount = fromSafe;
     // return Promise.reject(`from is not safe: no enough balance: ${fromSafe} for ${amount}`);
