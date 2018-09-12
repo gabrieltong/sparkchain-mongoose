@@ -1,4 +1,5 @@
 let config = require('../config');
+// console.log(config);
 const mongoose = require("mongoose");
 mongoose.set("debug", false);
 
@@ -19,7 +20,7 @@ if (SPARK_CHAIN_TEST_PASS) {
     SPARK_CHAIN_TEST_NAME
   }`;
 }
-
+// console.log(conn_main_string)
 let conn_main = mongoose.createConnection(conn_main_string);
 
 

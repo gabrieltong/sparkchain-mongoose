@@ -99,6 +99,7 @@ function walletPlugin(schema, options){
     }
   };
 
+
   schema.methods.createWallet = async function(options){
     let {chainCode} = options;
     if(this.wallet) return this.wallet;
