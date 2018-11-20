@@ -22,10 +22,7 @@ function walletPlugin(schema, options){
   };
 
   schema.methods.transferByPassword = async function(options){
-
     let {chainCode, tokenCode, amount, account, payPassword, memo} = options;
-    
-    // console.log(player)
     let wallet = await this.getWallet();
 
     if(!wallet)

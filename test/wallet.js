@@ -20,133 +20,138 @@ function timeout(ms) {
   });
 }
 
-describe('wallet', function() {
-  it('getBizs no type', function(done){
-    this.timeout(3 * 1000);
-    let fn = async function(){
-      let instance = await Wallet.findOne({userId:'player-1'});
-      let result = await instance.getBizs();
+// describe('wallet', function() {
+//   it('getBizs no type', function(done){
+//     this.timeout(3 * 1000);
+//     let fn = async function(){
+//       let instance = await Wallet.findOne({userId:'player-1'});
+//       let result = await instance.getBizs();
       
-      assert.equal(result.docs.length >=0, true);
-      done();
-    }
-    fn();
-  })
+//       assert.equal(result.docs.length >=0, true);
+//       done();
+//     }
+//     fn();
+//   })
 
-  it('getBizs type 1', function(done){
-    this.timeout(3 * 1000);
-    let fn = async function(){
-      let instance = await Wallet.findOne({userId:'player-1'});
-      let result = await instance.getBizs({type:1}, {chainCode, tokenCode});
-      result.docs.forEach(doc=>{
-        assert.equal(doc.type, 1);  
-      })
-      assert.equal(result.docs.length >=0, true);
-      done();
-    }
-    fn();
-  })
+//   it('getBizs type 1', function(done){
+//     this.timeout(3 * 1000);
+//     let fn = async function(){
+//       let instance = await Wallet.findOne({userId:'player-1'});
+//       let result = await instance.getBizs({type:1}, {chainCode, tokenCode});
+//       result.docs.forEach(doc=>{
+//         assert.equal(doc.type, 1);  
+//       })
+//       assert.equal(result.docs.length >=0, true);
+//       done();
+//     }
+//     fn();
+//   })
   
-  it('getBizs by type 2', function(done){
-    this.timeout(3 * 1000);
-    let fn = async function(){
-      let instance = await Wallet.findOne({userId:'player-1'});
-      let result = await instance.getBizs({type:2}, {chainCode, tokenCode});
-      result.docs.forEach(doc=>{
-        assert.equal(doc.type, 2);  
-      })
-      assert.equal(result.docs.length >=0, true);
-      done();
-    }
-    fn();
-  })
-})
-// return;
-describe('wallet', function() {
-  it('syncBalanceByAcount should ok', function(done){
-    this.timeout(3 * 1000);
-    let fn = async function abc(){
-      let instance = await Wallet.findOne({userId});
-      let result = await instance.syncBalanceByAcount({chainCode, tokenCode});
-      assert.equal(result.balances.length, 2);
-      done();
-    }
-    fn();
-  })
+//   it('getBizs by type 2', function(done){
+//     this.timeout(3 * 1000);
+//     let fn = async function(){
+//       let instance = await Wallet.findOne({userId:'player-1'});
+//       let result = await instance.getBizs({type:2}, {chainCode, tokenCode});
+//       result.docs.forEach(doc=>{
+//         assert.equal(doc.type, 2);  
+//       })
+//       assert.equal(result.docs.length >=0, true);
+//       done();
+//     }
+//     fn();
+//   })
+// })
+// // return;
+// describe('wallet', function() {
+//   it('syncBalanceByAcount should ok', function(done){
+//     this.timeout(3 * 1000);
+//     let fn = async function abc(){
+//       let instance = await Wallet.findOne({userId});
+//       let result = await instance.syncBalanceByAcount({chainCode, tokenCode});
+//       assert.equal(result.balances.length, 2);
+//       done();
+//     }
+//     fn();
+//   })
 
-  it('syncBalanceByAcount should not ok', function(done){
-    this.timeout(10 * 1000);
-    let fn = async function abc(){
-      let instance = await Wallet.findOne({userId});
-      try{
-        let result = await instance.syncBalanceByAcount({chainCode:'sssdfsdfbac', tokenCode:'abc'});
-        console.log(result)
-        assert.equal(result.balances.length, 2);
-        done();
-      }catch(err)
-      {
-        assert.equal(err.toString(), 'no.account')
-        done();
-      }
-    }
-    fn();
-  })
-  // return;
-  it('syncBalance', function(done){
-    this.timeout(10 * 1000);
-    let fn = async function(){
-      let instance = await Wallet.findOne({userId: 'player-4'});
-      assert.equal(!!instance, true);
-      let result = await instance.syncBalance({chainCode, tokenCode}).catch(e=>{
-        assert.equal(e, null);
-        done();
-        return;
-      });
-      assert.equal(result.balances.length, 2);
-      done();
-    }
-    fn();
-  })
-  // return; 
-  it('cachedBalances', function(done){
-    this.timeout(10 * 1000)
+//   it('syncBalanceByAcount should not ok', function(done){
+//     this.timeout(10 * 1000);
+//     let fn = async function abc(){
+//       let instance = await Wallet.findOne({userId});
+//       try{
+//         let result = await instance.syncBalanceByAcount({chainCode:'sssdfsdfbac', tokenCode:'abc'});
+//         console.log(result)
+//         assert.equal(result.balances.length, 2);
+//         done();
+//       }catch(err)
+//       {
+//         assert.equal(err.toString(), 'no.account')
+//         done();
+//       }
+//     }
+//     fn();
+//   })
+//   // return;
+//   it('syncBalance', function(done){
+//     this.timeout(10 * 1000);
+//     let fn = async function(){
+//       let instance = await Wallet.findOne({userId: 'player-4'});
+//       assert.equal(!!instance, true);
+//       let result = await instance.syncBalance({chainCode, tokenCode}).catch(e=>{
+//         assert.equal(e, null);
+//         done();
+//         return;
+//       });
+//       assert.equal(result.balances.length, 2);
+//       done();
+//     }
+//     fn();
+//   })
+//   // return; 
+//   it('cachedBalances', function(done){
+//     this.timeout(10 * 1000)
     
-    let fn = async function(){
-      try{
-        let wallet = await Wallet.findOne({userId: appid});
-        let result = await wallet.cachedBalances({chainCode});
-        assert.equal(result.is_cache, false);
-        result = await wallet.cachedBalances({chainCode});
-        assert.equal(result.is_cache, true);
-        await timeout(NODE_CACHE_TTD * 1000)
-        result = await wallet.cachedBalances({chainCode});
-        assert.equal(result.is_cache, false);
-        done();
-      }catch(e)
-      {
-        assert.equal(e, null);
-        done();
-      }
-    }
-    fn();
-  });
-});
+//     let fn = async function(){
+//       try{
+//         let wallet = await Wallet.findOne({userId: appid});
+//         let result = await wallet.cachedBalances({chainCode});
+//         assert.equal(result.is_cache, false);
+//         result = await wallet.cachedBalances({chainCode});
+//         assert.equal(result.is_cache, true);
+//         await timeout(NODE_CACHE_TTD * 1000)
+//         result = await wallet.cachedBalances({chainCode});
+//         assert.equal(result.is_cache, false);
+//         done();
+//       }catch(e)
+//       {
+//         assert.equal(e, null);
+//         done();
+//       }
+//     }
+//     fn();
+//   });
+// });
 // return;
 describe('Wallet', function() {
   it('newInstance', function(done){
     let fn = async function(){
       let userId = random.string(32);
-      let password = random.string(32);
+      let password = '12345678';
       let onlyWallet = false;
       let appId = appid;
       let wallet = await Wallet.newInstance({appId, userId, password, onlyWallet});
-
+      assert.equal(wallet.password, password) 
+      let payPassword = wallet.payPassword;
+      // console.log(`walet Paypassword is ${wallet.payPassword}`)
+      wallet = await Wallet.findOne({userId});
+      assert.equal(wallet.password, password) 
+      assert.equal(wallet.payPassword, payPassword)
       assert.equal(!!wallet, true);
       done();
     }
     fn();
   })
-  // return;
+  return;
   // this.timeout(3 * 1000)
   it('sync u1', function(done){
     let fn = async function(){
@@ -193,7 +198,7 @@ describe('Wallet', function() {
     fn();
   })
 })
-// return;
+return;
 describe('wallet', function() {   
   it('getBalances', function(done){
     let fn = async function(){

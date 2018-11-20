@@ -20,7 +20,6 @@ describe('app#', function() {
       let accessToken = await App.getAccessToken({}).catch(e=>{
         console.log(e)
       });
-      console.log(accessToken)
       assert.equal(!!accessToken, true);
       done();
     }
@@ -35,7 +34,6 @@ describe('app', function() {
     let fn = async function(){
       let instance = await App.findOne();
       let accessToken = await instance.getAccessToken();
-      console.log(accessToken)
       assert.equal(!!accessToken, true);
       done();
     }

@@ -35,7 +35,6 @@ BizSchema.statics.getInstance = async function(options){
 };
 
 BizSchema.methods.s = function(options, cb){
-  console.log(`debug s ++`)
   cb();
 };
 

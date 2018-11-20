@@ -11,18 +11,39 @@ let App = require('../models/app');
 let NodeCache = require('node-cache');
 let {NODE_CACHE_TTD, SPARK_CHAIN_TRAN_KEY, SPARK_CHAIN_SAFE} = config;
 let cache = new NodeCache({stdTTL:NODE_CACHE_TTD});
+let {encrypt, decrypt} = require('../sha1prng.js');
+
+let passwordKey = '6f7d6667ceefb6a2c8769920e8f76bb3';
+
+function encoder(v){
+  if(v){
+    return encrypt(v, passwordKey);  
+  }else{
+    return v
+  }
+}
+
+function decoder(v){
+  if(v)
+  {
+    return decrypt(v, passwordKey);  
+  }else{
+    return v
+  }  
+}
 
 let WalletSchema = new Schema({
   name: String,
   appId: { type: String, required: true, index: true},
-  password: { type: String, required: false},
+  password: { type: String, required: false, set: encoder, get: decoder},
   coin: { type: Number, required: false},
-  payPassword: { type: String, required: false},
+  payPassword: { type: String, required: false, set: encoder, get: decoder},
   userId: { type: String, required: true, index: { unique: true }},
   walletAddr: { type: String, required: true, index: { unique: true }},
   accounts: [accountSchema],
   balances: [balanceSchema]
 });
+
 
 WalletSchema.virtual("sum_balances").get(function() {
   this.balances

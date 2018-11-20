@@ -1,5 +1,4 @@
 let config = require('../config');
-// console.log(config);
 const mongoose = require("mongoose");
 mongoose.set("debug", false);
 
