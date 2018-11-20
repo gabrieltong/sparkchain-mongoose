@@ -112,10 +112,10 @@ WalletSchema.statics.sync = async function(options){
 };
 
 WalletSchema.methods.sync = async function(options){
-  let {chainCode} = options;
+  let {chainCode, tokenCode} = options;
   try{
     console.log('getBalances')
-    await this.getBalances({chainCode})
+    await this.getBalances({chainCode, tokenCode})
     console.log('getAccounts')
     await this.getAccounts({chainCode})
     console.log('resetPassword')
@@ -131,7 +131,7 @@ WalletSchema.methods.sync = async function(options){
 };
 
 WalletSchema.methods.cachedBalances = async function(options){
-  let {accessToken, chainCode} = options;
+  let {accessToken, chainCode, tokenCode} = options;
   let self = this;
   return new Promise(function(resolve, reject) {
     let cache_key = `getBalances-${self._id.toString}`;
@@ -200,13 +200,18 @@ WalletSchema.methods.syncBalance = async function(options){
 };
 
 WalletSchema.methods.getBalances = async function(options={}){
-  let {accessToken, chainCode} = options;
+  let {accessToken, chainCode, tokenCode} = options;
   let self = this;
   accessToken = await App.getAccessToken({accessToken}).catch(e=>{
     return Promise.reject(e);
   });
   let {userId} = this; 
   let data = {accessToken, userId};
+  if(tokenCode)
+  {
+    data = {...data, tokenCode};
+  }
+
   if(chainCode)
   {
     data = {...data, chainCode};
@@ -336,10 +341,10 @@ WalletSchema.methods.transferToAccount = async function(options){
       {
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
-        await self.getBalances({chainCode}).catch(e=>{
+        await self.getBalances({chainCode, tokenCode}).catch(e=>{
           console.log(e);
         });
-        biz.srcRemain = await self.balance({chainCode})
+        biz.srcRemain = await self.balance({chainCode, tokenCode})
         await biz.save().catch(e=>{
           return reject(e)
         });

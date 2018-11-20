@@ -62,8 +62,8 @@ function walletPlugin(schema, options){
       {
         if(getBalances)
         {
-          await from.getBalances({chainCode});
-          await other.getBalances({chainCode});
+          await from.getBalances({chainCode, tokenCode});
+          await other.getBalances({chainCode, tokenCode});
         }
         return await from.safeTransfer({other, chainCode, tokenCode, amount, memo, accessToken});
       }else{
