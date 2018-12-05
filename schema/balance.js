@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
-let sparkchain = require('sparkchain');
 
 let BalanceSchema = new Schema({
   tokenCode: String,

@@ -2,8 +2,6 @@ let config = require('../config');
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 let sparkchain = require('sparkchain');
-let async = require('async');
-let logger = require('../logger.js');
 let accountSchema = require('./account');
 let balanceSchema = require('./balance');
 let Biz = require('../models/biz');
@@ -58,7 +56,7 @@ WalletSchema.virtual("tran_value").get(function() {
 });
 
 WalletSchema.virtual("src_json").get(function(){
-  let hash = {};
+  
 });
 
 WalletSchema.statics.getInstance = async function(options){
@@ -94,17 +92,16 @@ WalletSchema.statics.getInstance = async function(options){
  * @param  {string} options.walletAddr 钱包地址
  */
 WalletSchema.statics.sync = async function(options){
-  let self = this;
-  let {appId, userId, walletAddr, chainCode} = options;
+  let {tokenCode, chainCode} = options;
   let wallet = await this.getInstance(options).catch(e=>{
     return Promise.reject(e);
   });
 
   if(wallet)
   {
-    await wallet.sync({chainCode}).catch(e=>{
+    await wallet.sync({chainCode, tokenCode}).catch(e=>{
       return Promise.reject(e);
-    });;
+    });
     return wallet;
   }else{
     return Promise.reject('no.wallet');
@@ -117,7 +114,7 @@ WalletSchema.methods.sync = async function(options){
     console.log('getBalances')
     await this.getBalances({chainCode, tokenCode})
     console.log('getAccounts')
-    await this.getAccounts({chainCode})
+    await this.getAccounts({chainCode, tokenCode})
     console.log('resetPassword')
     await this.resetPassword()
     console.log('resetPayPassword')
@@ -131,7 +128,6 @@ WalletSchema.methods.sync = async function(options){
 };
 
 WalletSchema.methods.cachedBalances = async function(options){
-  let {accessToken, chainCode, tokenCode} = options;
   let self = this;
   return new Promise(function(resolve, reject) {
     let cache_key = `getBalances-${self._id.toString}`;
@@ -161,7 +157,7 @@ WalletSchema.methods.syncBalanceByAcount = async function(options){
     let result = await account.balance({chainCode, tokenCode}).catch(e=>{
       return Promise.reject(e);
     });
-    let {err, response, body} = result;
+    let {body} = result;
 
     if(body.success)
     {
@@ -206,16 +202,8 @@ WalletSchema.methods.getBalances = async function(options={}){
     return Promise.reject(e);
   });
   let {userId} = this; 
-  let data = {accessToken, userId};
-  if(tokenCode)
-  {
-    data = {...data, tokenCode};
-  }
-
-  if(chainCode)
-  {
-    data = {...data, chainCode};
-  }
+  let data = {accessToken, userId, tokenCode, chainCode};
+  
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.balances(data, async function(err ,response, body){
       if(body.success)
@@ -224,7 +212,7 @@ WalletSchema.methods.getBalances = async function(options={}){
       }else{
         self.balances = [];
       }
-      self.coin = await self.safeBalance({chainCode});
+      self.coin = await self.safeBalance({chainCode, tokenCode});
       try{
         await self.save()  
       }catch(e){
@@ -237,22 +225,19 @@ WalletSchema.methods.getBalances = async function(options={}){
 
 WalletSchema.methods.getAccounts = async function(options={}){
   let self = this;
-  let {accessToken, chainCode} = options;
+  let {accessToken, chainCode, tokenCode} = options;
   accessToken = await App.getAccessToken({accessToken}).catch(e=>{
     return Promise.reject(e);
   });
 
   let {userId} = self; 
-  let data = {accessToken, userId};
-  if(chainCode)
-  {
-    data = {...data, chainCode};
-  }
+  let data = {accessToken, userId, tokenCode, chainCode};
+
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.accounts(data, async function(err ,response, body){
       if(body.success)
       {
-        accounts = body.data.accounts.map(a=>{
+        let accounts = body.data.accounts.map(a=>{
           return {
             accountId: a.accountId,
             chainCode: a.chainCode,
@@ -288,11 +273,11 @@ WalletSchema.methods.balance = async function(options){
 };
 
 WalletSchema.methods.safeTransfer = async function(options){
-  let {other, accessToken, chainCode, tokenCode, amount, reload} = options;
+  let {other, amount} = options;
   let self = this;
 
   let fromSafe = await self.safeBalance(options).catch(function(err){
-    return Promise.reject(e);
+    return Promise.reject(err);
   });
 
   if(fromSafe < 0)
@@ -388,14 +373,14 @@ WalletSchema.methods.transfer = async function(options){
         biz.gasFee = body.data.gasFee;
         biz.hash = body.data.hash;
         
-        await self.getBalances({chainCode}).catch(e=>{
+        await self.getBalances({chainCode, tokenCode}).catch(e=>{
           console.log(e);
         });
-        biz.srcRemain = await self.safeBalance({chainCode})
-        await other.getBalances({chainCode}).catch(e=>{
+        biz.srcRemain = await self.safeBalance({chainCode, tokenCode})
+        await other.getBalances({chainCode, tokenCode}).catch(e=>{
           console.log(e);
         });
-        biz.descRemain = await other.safeBalance({chainCode});
+        biz.descRemain = await other.safeBalance({chainCode, tokenCode});
         await biz.save()
 
         resolve({err, response, body})
@@ -418,7 +403,7 @@ WalletSchema.methods.modifyPassword = async function(options){
     return Promise.reject(e);
   });
 
-  data = {accessToken, userId, newPassword, oldPassword: password};
+  let data = {accessToken, userId, newPassword, oldPassword: password};
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.modifyPassword(data, async function(err, response, body){
       if(body.success){
@@ -476,7 +461,7 @@ WalletSchema.methods.updatePayPassword = async function(options){
     return Promise.reject(e);
   });
 
-  data = {accessToken, newPayPassword, userId, oldPayPassword: payPassword};
+  let data = {accessToken, newPayPassword, userId, oldPayPassword: payPassword};
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.updatePayPassword(data, async function(err, response, body){
       if(body.success){
@@ -498,7 +483,7 @@ WalletSchema.methods.validPayPassword = async function(options){
     return Promise.reject(e);
   });
 
-  data = {accessToken, payPassword, userId};
+  let data = {accessToken, payPassword, userId};
   return new Promise(function(resolve, reject) {
     sparkchain.Wallet.validPayPassword(data, function(err, response, body){
       resolve({err, response, body});
@@ -532,7 +517,7 @@ WalletSchema.methods.resetPayPassword = async function(options={}){
 };
 
 WalletSchema.methods.setPayPassword = async function(options){
-  let {appId, accessToken, payPassword} = options;
+  let {accessToken, payPassword} = options;
   let {userId, password} = this;
   let self = this;
   options = {accessToken, payPassword, userId, password};

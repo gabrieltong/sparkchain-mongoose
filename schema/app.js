@@ -2,7 +2,6 @@ const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 let sparkchain = require('sparkchain');
 let moment = require('moment');
-let async = require('async');
 let config = require('../config');
 
 let AppSchema = new Schema({

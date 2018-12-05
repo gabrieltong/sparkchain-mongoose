@@ -4,7 +4,6 @@ let Schema = mongoose.Schema
 require("dotenv").config();
 let Wallet = require('../models/wallet');
 let random = require("random-js")();
-let async = require('async');
 let {appid} = config;
 module.exports = walletPlugin;
 
@@ -41,7 +40,6 @@ function walletPlugin(schema, options){
   schema.methods.transferToAccount = async function(options){
 
     let {accessToken, account, chainCode, tokenCode, amount, memo} = options;
-    let self = this;
     let from = await this.getWallet().catch(e=>{
       return Promise.reject(e);
     });
@@ -53,7 +51,6 @@ function walletPlugin(schema, options){
 
   schema.methods.safeTransfer = async function(options){
     let {accessToken, other, chainCode, tokenCode, amount, memo, getBalances} = options;
-    let self = this;
     try{
       let from = await this.getWallet();
       other = await other.getWallet();
@@ -77,12 +74,11 @@ function walletPlugin(schema, options){
 
   schema.methods.transfer = async function(options){
     let {accessToken, other, chainCode, tokenCode, amount, memo} = options;
-    let self = this;
     try{
       let from = await this.getWallet();
-      await from.sync({chainCode});
+      await from.sync({chainCode, tokenCode});
       other = await other.getWallet();
-      await other.sync({chainCode});
+      await other.sync({chainCode, tokenCode});
 
       if(from && other)
       {
@@ -98,7 +94,7 @@ function walletPlugin(schema, options){
 
 
   schema.methods.createWallet = async function(options){
-    let {chainCode} = options;
+    let {chainCode, tokenCode} = options;
     if(this.wallet) return this.wallet;
     
     let appId = appid;
@@ -113,11 +109,11 @@ function walletPlugin(schema, options){
       let wallet = await Wallet.newInstance({appId, userId, password});
       this.wallet = wallet;
       await this.save();
-      await wallet.sync({chainCode});
+      await wallet.sync({chainCode, tokenCode});
       return wallet;
     }catch(e)
     {
       return Promise.reject(e);
     }
   }
-};
+}

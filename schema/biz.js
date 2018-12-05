@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
-let sparkchain = require('sparkchain');
 const timestamps = require("mongoose-timestamp");
 const mongoosePaginate = require("mongoose-paginate");
 

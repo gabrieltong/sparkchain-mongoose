@@ -1,5 +1,4 @@
 let App = require('../models/app');
-let async = require('async');
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
 let sparkchain = require('sparkchain');

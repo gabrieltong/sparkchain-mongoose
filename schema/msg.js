@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 let Schema = mongoose.Schema
-let sparkchain = require('sparkchain');
 
 let MsgSchema = new Schema({
   id: { type: String, required: true, index: {unique: true}},
