@@ -33,9 +33,9 @@ function decoder(v){
 let WalletSchema = new Schema({
   name: String,
   appId: { type: String, required: true, index: true},
-  password: { type: String, required: false, set: encoder, get: decoder},
+  password: { type: String, required: false},
   coin: { type: Number, required: false},
-  payPassword: { type: String, required: false, set: encoder, get: decoder},
+  payPassword: { type: String, required: false},
   userId: { type: String, required: true, index: { unique: true }},
   walletAddr: { type: String, required: true, index: { unique: true }},
   accounts: [accountSchema],
